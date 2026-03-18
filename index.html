@@ -6,81 +6,77 @@
     <title>Gnome Sort Visualizer</title>
     <style>
         :root { 
-            --bg: #0d1117; 
-            --bar-color: #58a6ff; 
-            --active-color: #ff7b72; 
-            --success-color: #3fb950;
-            --text: #c9d1d9;
+            --bg: #09090b; 
+            --bar: #3f3f46; 
+            --active: #ef4444; 
+            --success: #22c55e;
+            --text: #fafafa;
         }
         body { 
             background: var(--bg); 
             color: var(--text); 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            font-family: 'Inter', system-ui, sans-serif;
             display: flex; 
             flex-direction: column; 
             align-items: center; 
             justify-content: center; 
             height: 100vh; 
             margin: 0; 
-            overflow: hidden;
         }
         #visualizer { 
             display: flex; 
             align-items: flex-end; 
-            height: 400px; 
-            width: 90vw; 
-            max-width: 800px;
-            gap: 3px; 
-            padding: 20px;
-            background: #161b22;
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            height: 350px; 
+            width: 85vw; 
+            max-width: 600px;
+            gap: 4px; 
+            padding: 24px;
+            background: #18181b;
+            border-radius: 12px;
+            border: 1px solid #27272a;
         }
         .bar { 
             flex: 1; 
-            background: var(--bar-color); 
-            border-radius: 3px 3px 0 0;
-            transition: height 0.05s ease, background-color 0.2s; 
+            background: var(--bar); 
+            border-radius: 2px 2px 0 0;
+            transition: height 0.1s, background-color 0.1s; 
         }
-        .active { background: var(--active-color); box-shadow: 0 0 12px var(--active-color); }
-        .success { background: var(--success-color); }
-        .controls { margin-top: 30px; display: flex; gap: 15px; }
+        .active { background: var(--active); }
+        .success { background: var(--success); }
+        .controls { margin-top: 40px; }
         button { 
             padding: 12px 24px; 
             cursor: pointer; 
             border: none; 
-            border-radius: 6px; 
+            border-radius: 8px; 
             font-weight: 600; 
-            background: #238636; 
-            color: white; 
-            transition: 0.2s;
+            background: var(--text); 
+            color: var(--bg); 
+            transition: transform 0.1s;
         }
-        button:hover { background: #2ea043; }
-        button:disabled { background: #21262d; color: #8b949e; cursor: not-allowed; }
-        #reset { background: #30363d; }
-        #reset:hover { background: #3c444d; }
+        button:active { transform: scale(0.95); }
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
-    <h1>Gnome Sort Visualizer</h1>
+    <h1 style="font-weight: 400; letter-spacing: -1px;">Gnome Sort</h1>
     <div id="visualizer"></div>
 
     <div class="controls">
-        <button id="reset" onclick="init()">Shuffle</button>
-        <button id="start" onclick="runSort()">Start Sort</button>
+        <button id="start" onclick="runSort()">Start Animation</button>
     </div>
 
     <script>
         const container = document.getElementById('visualizer');
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let arr = []; // Matches the image
-        const n_elements = 40;
+        const startBtn = document.getElementById('start');
+        let audioCtx;
+        let arr = [];
+        const n_elements = 25;
 
         function init() {
-            arr = Array.from({length: n_elements}, () => Math.floor(Math.random() * 90) + 10);
+            arr = Array.from({length: n_elements}, () => Math.floor(Math.random() * 85) + 10);
             render();
-            document.getElementById('start').disabled = false;
         }
 
         function render(activePos = -1, isDone = false) {
@@ -95,60 +91,74 @@
             });
         }
 
-        function playTone(val) {
+        // Creates the "Beep" sound for each step
+        function playStepSound(val) {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.frequency.setValueAtTime(200 + (val * 8), audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
+            
+            osc.type = 'sine';
+            // Scale frequency based on bar height (higher bar = higher pitch)
+            osc.frequency.setValueAtTime(200 + (val * 10), audioCtx.currentTime);
+            
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.08);
+            
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             osc.start();
-            osc.stop(audioCtx.currentTime + 0.1);
+            osc.stop(audioCtx.currentTime + 0.08);
         }
 
-        async function playVictory() {
-            const scale = [523.25, 659.25, 783.99, 1046.50]; // C Major Arpeggio
-            for (let freq of scale) {
+        async function playVictoryChime() {
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C Major
+            for (let freq of notes) {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.frequency.value = freq;
                 gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.6);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 osc.start();
-                osc.stop(audioCtx.currentTime + 0.6);
-                await new Promise(r => setTimeout(r, 150));
+                osc.stop(audioCtx.currentTime + 0.5);
+                await new Promise(r => setTimeout(r, 120));
             }
         }
 
-        // --- CODE FROM YOUR IMAGE INTEGRATED BELOW ---
         async function runSort() {
+            // Browsers require a user gesture to start audio
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            document.getElementById('start').disabled = true;
-            document.getElementById('reset').disabled = true;
 
+            startBtn.disabled = true;
+
+            // Logic matching the provided code snippet
             let pos = 0;
-            const n = arr.length; // From image
+            const n = arr.length;
 
             while (pos < n) {
                 render(pos);
-                playTone(arr[pos]);
-                await new Promise(r => setTimeout(r, 40));
+                playStepSound(arr[pos]);
+                await new Promise(r => setTimeout(r, 60)); // Adjust speed here
 
                 if (pos === 0 || arr[pos] >= arr[pos - 1]) {
                     pos++;
                 } else {
-                    // Swap current and previous (From image)
+                    // Swap logic
                     [arr[pos], arr[pos - 1]] = [arr[pos - 1], arr[pos]];
                     pos--;
                 }
             }
             
-            render(-1, true);
-            await playVictory();
-            document.getElementById('reset').disabled = false;
+            render(-1, true); // Final green state
+            await playVictoryChime();
+            
+            // Re-shuffle after a short delay so user can see result
+            setTimeout(() => {
+                init();
+                startBtn.disabled = false;
+            }, 1500);
         }
 
         init();
