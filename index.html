@@ -2,80 +2,44 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gnome Sort Visualizer</title>
+    <title>Gnome Sort</title>
     <style>
         :root { 
-            --bg: #09090b; 
-            --bar: #3f3f46; 
-            --active: #ef4444; 
-            --success: #22c55e;
-            --text: #fafafa;
+            --bg: #09090b; --bar: #27272a; --active: #ef4444; --success: #22c55e; --text: #fafafa;
         }
         body { 
-            background: var(--bg); 
-            color: var(--text); 
-            font-family: 'Inter', system-ui, sans-serif;
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            height: 100vh; 
-            margin: 0; 
+            background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; 
         }
         #visualizer { 
-            display: flex; 
-            align-items: flex-end; 
-            height: 350px; 
-            width: 85vw; 
-            max-width: 600px;
-            gap: 4px; 
-            padding: 24px;
-            background: #18181b;
-            border-radius: 12px;
-            border: 1px solid #27272a;
+            display: flex; align-items: flex-end; height: 300px; width: 90vw; max-width: 600px;
+            gap: 4px; padding: 20px; background: #18181b; border-radius: 12px; border: 1px solid #3f3f46;
         }
-        .bar { 
-            flex: 1; 
-            background: var(--bar); 
-            border-radius: 2px 2px 0 0;
-            transition: height 0.1s, background-color 0.1s; 
-        }
-        .active { background: var(--active); }
+        .bar { flex: 1; background: var(--bar); border-radius: 2px; transition: height 0.05s; }
+        .active { background: var(--active); box-shadow: 0 0 15px var(--active); }
         .success { background: var(--success); }
-        .controls { margin-top: 40px; }
         button { 
-            padding: 12px 24px; 
-            cursor: pointer; 
-            border: none; 
-            border-radius: 8px; 
-            font-weight: 600; 
-            background: var(--text); 
-            color: var(--bg); 
-            transition: transform 0.1s;
+            margin-top: 40px; padding: 12px 28px; cursor: pointer; border: none; border-radius: 8px; 
+            font-weight: 600; background: var(--text); color: var(--bg); font-size: 1rem;
         }
-        button:active { transform: scale(0.95); }
-        button:disabled { opacity: 0.3; cursor: not-allowed; }
+        button:disabled { opacity: 0.2; }
     </style>
 </head>
 <body>
 
-    <h1 style="font-weight: 400; letter-spacing: -1px;">Gnome Sort</h1>
+    <h1 style="font-weight: 500; opacity: 0.9;">Gnome Sort</h1>
     <div id="visualizer"></div>
-
-    <div class="controls">
-        <button id="start" onclick="runSort()">Start Animation</button>
-    </div>
+    <button id="start" onclick="runSort()">Start Sorting</button>
 
     <script>
         const container = document.getElementById('visualizer');
         const startBtn = document.getElementById('start');
         let audioCtx;
         let arr = [];
-        const n_elements = 25;
+        const n_elements = 20; // Fewer elements makes the "music" clearer
 
         function init() {
-            arr = Array.from({length: n_elements}, () => Math.floor(Math.random() * 85) + 10);
+            arr = Array.from({length: n_elements}, () => Math.floor(Math.random() * 80) + 15);
             render();
         }
 
@@ -83,82 +47,78 @@
             container.innerHTML = '';
             arr.forEach((val, i) => {
                 const bar = document.createElement('div');
-                bar.className = 'bar';
-                if (i === activePos) bar.classList.add('active');
-                if (isDone) bar.classList.add('success');
+                bar.className = 'bar' + (i === activePos ? ' active' : '') + (isDone ? ' success' : '');
                 bar.style.height = `${val}%`;
                 container.appendChild(bar);
             });
         }
 
-        // Creates the "Beep" sound for each step
-        function playStepSound(val) {
+        function playTone(val, type = 'sine') {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             
-            osc.type = 'sine';
-            // Scale frequency based on bar height (higher bar = higher pitch)
-            osc.frequency.setValueAtTime(200 + (val * 10), audioCtx.currentTime);
+            osc.type = type;
+            // Frequency logic: map height to a pleasant musical range
+            osc.frequency.setValueAtTime(220 + (val * 8), audioCtx.currentTime);
             
             gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
             
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             osc.start();
-            osc.stop(audioCtx.currentTime + 0.08);
+            osc.stop(audioCtx.currentTime + 0.1);
         }
 
-        async function playVictoryChime() {
-            const notes = [523.25, 659.25, 783.99, 1046.50]; // C Major
+        async function playVictory() {
+            const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51]; 
             for (let freq of notes) {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.frequency.value = freq;
                 gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.5);
-                await new Promise(r => setTimeout(r, 120));
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.8);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.8);
+                await new Promise(r => setTimeout(r, 100));
             }
         }
 
         async function runSort() {
-            // Browsers require a user gesture to start audio
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') audioCtx.resume();
-
             startBtn.disabled = true;
 
-            // Logic matching the provided code snippet
             let pos = 0;
             const n = arr.length;
 
             while (pos < n) {
                 render(pos);
-                playStepSound(arr[pos]);
-                await new Promise(r => setTimeout(r, 60)); // Adjust speed here
+                
+                // Play a standard tone for the "check"
+                playTone(arr[pos], 'sine');
+                await new Promise(r => setTimeout(r, 50));
 
                 if (pos === 0 || arr[pos] >= arr[pos - 1]) {
                     pos++;
                 } else {
-                    // Swap logic
+                    // SWAP HAPPENING HERE
+                    // Play a sharper tone for the swap to match the video energy
+                    playTone(arr[pos], 'triangle'); 
+                    
                     [arr[pos], arr[pos - 1]] = [arr[pos - 1], arr[pos]];
                     pos--;
+                    
+                    render(pos); // Show the swap immediately
+                    await new Promise(r => setTimeout(r, 50));
                 }
             }
             
-            render(-1, true); // Final green state
-            await playVictoryChime();
+            render(-1, true);
+            await playVictory();
             
-            // Re-shuffle after a short delay so user can see result
-            setTimeout(() => {
-                init();
-                startBtn.disabled = false;
-            }, 1500);
+            setTimeout(() => { init(); startBtn.disabled = false; }, 2000);
         }
 
         init();
