@@ -2,240 +2,156 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=1280, initial-scale=0.5, maximum-scale=1.0, user-scalable=yes">
-    <title>&#8203;</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gnome Sort Visualizer</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime&family=Inter:wght@400;700;900&display=swap');
-        
-        :root { --cord-blue: #5865F2; --win-blue: #0000aa; }
-        
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background: #000; 
-            color: white; 
-            overflow: hidden; 
-            width: 1280px; 
-            height: 720px; 
-            margin: 0 auto;
-            touch-action: none; 
-            cursor: none; 
+        :root { 
+            --bg: #0d1117; 
+            --bar-color: #58a6ff; 
+            --active-color: #ff7b72; 
+            --success-color: #3fb950;
+            --text: #c9d1d9;
         }
-
-        .bit-container { display: grid; grid-template-columns: repeat(8, 1fr); gap: 1px; width: 80px; height: 80px; }
-        .bit { width: 100%; height: 100%; border-radius: 1px; }
-
-        .classic-blue { background: var(--win-blue); font-family: 'Courier Prime', monospace; }
-        .win-btn { background: #c0c0c0; border-top: 3px solid #fff; border-left: 3px solid #fff; border-right: 3px solid #444; border-bottom: 3px solid #444; padding: 10px 30px; color: black; font-weight: 700; transition: all 0.1s; }
-        .win-btn:active { border: 3px solid #000; transform: translate(2px, 2px); }
-
-        @media (orientation: portrait) { #port-lock { display: flex !important; } #os-layer { display: none; } }
-
-        .bit-loader { width: 60px; height: 60px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; animation: bitSpin 1s steps(4) infinite; }
-        @keyframes bitSpin { to { transform: rotate(360deg); } }
-        
-        #cursor { position: fixed; width: 18px; height: 18px; background: white; border: 2px solid black; pointer-events: none; z-index: 10000; }
-        .cord-glass { background: rgba(15, 15, 20, 0.8); backdrop-filter: blur(45px); border: 1px solid rgba(255,255,255,0.1); }
+        body { 
+            background: var(--bg); 
+            color: var(--text); 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            margin: 0; 
+            overflow: hidden;
+        }
+        #visualizer { 
+            display: flex; 
+            align-items: flex-end; 
+            height: 400px; 
+            width: 90vw; 
+            max-width: 800px;
+            gap: 3px; 
+            padding: 20px;
+            background: #161b22;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .bar { 
+            flex: 1; 
+            background: var(--bar-color); 
+            border-radius: 3px 3px 0 0;
+            transition: height 0.05s ease, background-color 0.2s; 
+        }
+        .active { background: var(--active-color); box-shadow: 0 0 12px var(--active-color); }
+        .success { background: var(--success-color); }
+        .controls { margin-top: 30px; display: flex; gap: 15px; }
+        button { 
+            padding: 12px 24px; 
+            cursor: pointer; 
+            border: none; 
+            border-radius: 6px; 
+            font-weight: 600; 
+            background: #238636; 
+            color: white; 
+            transition: 0.2s;
+        }
+        button:hover { background: #2ea043; }
+        button:disabled { background: #21262d; color: #8b949e; cursor: not-allowed; }
+        #reset { background: #30363d; }
+        #reset:hover { background: #3c444d; }
     </style>
 </head>
 <body>
 
-    <div id="cursor"></div>
+    <h1>Gnome Sort Visualizer</h1>
+    <div id="visualizer"></div>
 
-    <div id="port-lock" class="fixed inset-0 z-[1000] bg-black hidden flex-col items-center justify-center text-center">
-        <div class="w-20 h-12 border-4 border-[#5865F2] rounded animate-pulse mb-6"></div>
-        <h1 class="font-bold text-2xl uppercase tracking-widest">A Wide View is Better</h1>
-        <p class="mt-2 opacity-50">Please flip your device to landscape to enter CordOS.</p>
-    </div>
-
-    <div id="os-layer" class="relative w-full h-full">
-        <div id="boot" class="absolute inset-0 z-[900] bg-black flex flex-col items-center justify-center">
-            <div id="boot-logo" class="bit-container mb-12 scale-125"></div>
-            <div class="bit-loader"><div class="bit bg-[#5865F2]"></div><div class="bit bg-white/5"></div><div class="bit bg-white/5"></div><div class="bit bg-[#5865F2]"></div></div>
-            <p class="mt-10 font-mono text-xs opacity-30 tracking-widest">WAKING UP THE BITS...</p>
-        </div>
-
-        <div id="classic-setup" class="absolute inset-0 z-[850] classic-blue hidden flex items-center justify-center">
-            <div class="w-[920px] bg-[#c0c0c0] p-1 shadow-[20px_20px_0px_rgba(0,0,0,0.4)]">
-                <div class="bg-[#000080] text-white px-4 py-2 font-bold flex justify-between text-sm">
-                    <span>CordOS Installation - Welcome Home</span>
-                    <span>✕</span>
-                </div>
-                <div class="p-12 text-black border-4 border-white">
-                    <h1 class="text-4xl font-black mb-4">Let's get you set up.</h1>
-                    <p class="text-lg mb-8 opacity-80">We're about to prepare your 2.0 TB workspace. It won't take long.</p>
-                    <div class="bg-black text-[#00ff00] p-6 font-mono text-md mb-10 h-44 overflow-hidden rounded-sm">
-                        <p id="setup-log">> Making some room for your files...</p>
-                    </div>
-                    <button onclick="toFinalSetup()" class="win-btn text-xl uppercase tracking-tight">Sounds good, let's go</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="oobe" class="absolute inset-0 z-[800] bg-[#0c0c0e] hidden flex items-center justify-center">
-            <div class="max-w-4xl text-center">
-                <h1 class="text-8xl font-black mb-6 tracking-tighter italic">Almost there.</h1>
-                <p class="text-xl opacity-40 mb-16">How would you like to use your new space?</p>
-                <div class="flex gap-10 justify-center">
-                    <div class="w-96 p-12 bg-white/5 rounded-[4rem] border border-white/10 hover:border-[#5865F2] hover:bg-white/[0.07] transition-all cursor-pointer group" onclick="completeOOBE()">
-                        <h3 class="text-3xl font-black mb-4 group-hover:text-[#5865F2]">Rocketeer</h3>
-                        <p class="text-sm opacity-50 leading-relaxed">The full experience. 2TB of freedom, Discord pre-installed, and total control.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="desktop" class="absolute inset-0 bg-[#121214] bg-[url('https://images.unsplash.com/photo-1635776062127-d379bfcba9f8?q=80&w=2524')] bg-cover hidden">
-            
-            <div class="p-12 space-y-20">
-                <div ondblclick="openApp('explorer')" class="flex flex-col items-center group cursor-pointer w-32">
-                    <div id="icon-explorer" class="bit-container group-hover:scale-110 transition-transform"></div>
-                    <span class="text-xs font-black mt-4 bg-black/60 px-5 py-2 rounded-full uppercase tracking-widest border border-white/5">My Files</span>
-                </div>
-                <div ondblclick="openApp('discord')" class="flex flex-col items-center group cursor-pointer w-32">
-                    <div id="icon-discord" class="bit-container group-hover:scale-110 transition-transform"></div>
-                    <span class="text-xs font-black mt-4 bg-black/60 px-5 py-2 rounded-full uppercase tracking-widest border border-white/5">Discord</span>
-                </div>
-            </div>
-
-            <div class="fixed bottom-0 left-0 w-[1280px] h-24 bg-black/40 backdrop-blur-3xl border-t border-white/10 flex items-center px-12">
-                <button onclick="toggleStart()" class="w-16 h-16 bg-[#5865F2] rounded-2xl flex items-center justify-center hover:bg-[#4752c4] shadow-xl transition-all">
-                    <div class="w-7 h-7 bg-white rounded-sm"></div>
-                </button>
-                <div class="ml-auto flex items-center gap-12">
-                    <div class="text-right">
-                        <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Storage Space</p>
-                        <p class="text-xs font-bold text-white/80">27GB used of 2.0TB</p>
-                    </div>
-                    <div class="h-10 w-[1px] bg-white/10"></div>
-                    <span id="clock" class="text-2xl font-black tracking-tighter">00:00</span>
-                </div>
-            </div>
-
-            <div id="start-menu" class="hidden absolute bottom-28 left-12 w-[400px] cord-glass rounded-[3.5rem] p-10 shadow-2xl">
-                <h2 class="text-xs font-black text-[#5865F2] mb-8 tracking-widest uppercase">Quick Access</h2>
-                <div class="grid grid-cols-2 gap-6">
-                    <div class="bg-white/5 p-8 rounded-[2rem] flex flex-col items-center gap-4 hover:bg-white/10 cursor-pointer">
-                        <div class="w-14 h-14 bg-orange-500 rounded-2xl"></div>
-                        <span class="text-[10px] font-black uppercase">Chrome</span>
-                    </div>
-                    <div class="bg-white/5 p-8 rounded-[2rem] flex flex-col items-center gap-4 hover:bg-white/10 cursor-pointer">
-                        <div class="w-14 h-14 bg-blue-500 rounded-2xl"></div>
-                        <span class="text-[10px] font-black uppercase">Cordser</span>
-                    </div>
-                </div>
-            </div>
-
-            <div id="app-explorer" class="hidden absolute inset-20 cord-glass rounded-[4.5rem] shadow-2xl overflow-hidden border border-white/20">
-                <div class="h-24 border-b border-white/10 flex items-center px-16 justify-between">
-                    <div>
-                        <h2 class="font-black text-2xl tracking-tighter">Everything</h2>
-                        <p class="text-xs opacity-40 font-bold uppercase">Local Disk (C:) — 800+ Items</p>
-                    </div>
-                    <button onclick="closeApp('explorer')" class="w-12 h-12 flex items-center justify-center rounded-full hover:bg-red-500 transition-colors font-black text-2xl">✕</button>
-                </div>
-                <div id="file-grid" class="p-16 grid grid-cols-6 gap-12 overflow-y-auto h-full pb-52">
-                    </div>
-            </div>
-
-            <div id="app-discord" class="hidden absolute inset-12 bg-[#1e1f22] rounded-[4.5rem] overflow-hidden shadow-2xl border-4 border-[#5865F2]/20">
-                <iframe src="https://discord.com/widget?id=83224328&theme=dark" class="w-full h-full border-none"></iframe>
-            </div>
-        </div>
-
-        <div id="bsod" class="hidden absolute inset-0 z-[1000] bg-[#0046ab] p-32 font-mono text-white">
-            <div class="text-[200px] font-bold">:(</div>
-            <h1 class="text-5xl mt-12 mb-8 font-black leading-tight">Something went wrong.<br>It's not your fault.</h1>
-            <p class="text-2xl opacity-80 mb-10">CordOS hit a bit it didn't recognize. We're going to restart for you.</p>
-            <p class="text-lg opacity-40 font-bold">FAILURE: CORDLAUNCHER64_UNEXPECTED_BEHAVIOR</p>
-        </div>
+    <div class="controls">
+        <button id="reset" onclick="init()">Shuffle</button>
+        <button id="start" onclick="runSort()">Start Sort</button>
     </div>
 
     <script>
-        const maps = {
-            logo: [0,1,1,1,1,1,1,0, 1,1,0,0,0,0,1,1, 1,0,1,1,1,1,0,1, 1,0,1,0,0,1,0,1, 1,0,1,0,0,1,0,1, 1,0,1,1,1,1,0,1, 1,1,0,0,0,0,1,1, 0,1,1,1,1,1,1,0],
-            explorer: [0,1,1,1,1,1,0,0, 1,1,1,1,1,1,1,0, 1,1,0,0,0,0,1,1, 1,1,0,0,0,0,1,1, 1,1,0,0,0,0,1,1, 1,1,0,0,0,0,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1],
-            discord: [0,0,1,1,1,1,0,0, 0,1,1,1,1,1,1,0, 1,1,0,1,1,0,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 0,1,1,0,0,1,1,0, 0,0,1,1,1,1,0,0, 0,0,0,1,1,0,0,0]
-        };
+        const container = document.getElementById('visualizer');
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let arr = []; // Matches the image
+        const n_elements = 40;
 
-        function drawIcon(id, map, color) {
-            const el = document.getElementById(id);
-            if(!el) return;
-            map.forEach(bit => {
-                const b = document.createElement('div');
-                b.className = "bit";
-                if(bit) b.style.backgroundColor = color;
-                el.appendChild(b);
+        function init() {
+            arr = Array.from({length: n_elements}, () => Math.floor(Math.random() * 90) + 10);
+            render();
+            document.getElementById('start').disabled = false;
+        }
+
+        function render(activePos = -1, isDone = false) {
+            container.innerHTML = '';
+            arr.forEach((val, i) => {
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                if (i === activePos) bar.classList.add('active');
+                if (isDone) bar.classList.add('success');
+                bar.style.height = `${val}%`;
+                container.appendChild(bar);
             });
         }
 
-        // BOOT LOGIC
-        drawIcon('boot-logo', maps.logo, '#5865F2');
-        setTimeout(() => {
-            document.getElementById('boot').style.display = 'none';
-            document.getElementById('classic-setup').style.display = 'flex';
-            runLog();
-        }, 3000);
-
-        function runLog() {
-            const log = document.getElementById('setup-log');
-            const lines = ["> Finding your disk space...", "> Getting the desk ready...", "> Tidying up the bits...", "> Done! Let's get started."];
-            let i = 0;
-            const interval = setInterval(() => {
-                if(i < lines.length) {
-                    log.innerHTML += `<br>${lines[i]}`;
-                    i++;
-                } else {
-                    clearInterval(interval);
-                }
-            }, 900);
+        function playTone(val) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.frequency.setValueAtTime(200 + (val * 8), audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
         }
 
-        function toFinalSetup() {
-            document.getElementById('classic-setup').style.display = 'none';
-            document.getElementById('oobe').style.display = 'flex';
-        }
-
-        function completeOOBE() {
-            document.getElementById('oobe').style.display = 'none';
-            document.getElementById('desktop').style.display = 'block';
-            initDesktop();
-        }
-
-        function initDesktop() {
-            drawIcon('icon-explorer', maps.explorer, '#fbbf24');
-            drawIcon('icon-discord', maps.discord, '#5865F2');
-            
-            const grid = document.getElementById('file-grid');
-            
-            // TRAP
-            const trap = document.createElement('div');
-            trap.className = "flex flex-col items-center group cursor-pointer p-8 hover:bg-white/10 rounded-[2.5rem]";
-            trap.ondblclick = () => { document.getElementById('bsod').classList.remove('hidden'); };
-            trap.innerHTML = `<div class="w-24 h-24 bg-red-500/10 border-4 border-red-500 rounded-[2rem] flex items-center justify-center font-black text-xs">EXE</div><span class="text-[10px] font-black mt-5 text-red-500 uppercase tracking-widest">Cord Launcher</span>`;
-            grid.appendChild(trap);
-
-            for(let i=1; i<805; i++) {
-                const div = document.createElement('div');
-                div.className = "flex flex-col items-center opacity-30 p-8";
-                div.innerHTML = `<div class="bit-container scale-50 opacity-20">${Array(64).fill(0).map(() => `<div class="bit bg-white"></div>`).join('')}</div><span class="text-[10px] mt-4 font-bold uppercase tracking-tighter text-gray-400">System File ${i}</span>`;
-                grid.appendChild(div);
+        async function playVictory() {
+            const scale = [523.25, 659.25, 783.99, 1046.50]; // C Major Arpeggio
+            for (let freq of scale) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.6);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.6);
+                await new Promise(r => setTimeout(r, 150));
             }
         }
 
-        function openApp(id) { document.getElementById('app-'+id).classList.remove('hidden'); }
-        function closeApp(id) { document.getElementById('app-'+id).classList.add('hidden'); }
-        function toggleStart() { document.getElementById('start-menu').classList.toggle('hidden'); }
+        // --- CODE FROM YOUR IMAGE INTEGRATED BELOW ---
+        async function runSort() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            document.getElementById('start').disabled = true;
+            document.getElementById('reset').disabled = true;
 
-        const cursor = document.getElementById('cursor');
-        document.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-        });
+            let pos = 0;
+            const n = arr.length; // From image
 
-        setInterval(() => {
-            document.getElementById('clock').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        }, 1000);
+            while (pos < n) {
+                render(pos);
+                playTone(arr[pos]);
+                await new Promise(r => setTimeout(r, 40));
+
+                if (pos === 0 || arr[pos] >= arr[pos - 1]) {
+                    pos++;
+                } else {
+                    // Swap current and previous (From image)
+                    [arr[pos], arr[pos - 1]] = [arr[pos - 1], arr[pos]];
+                    pos--;
+                }
+            }
+            
+            render(-1, true);
+            await playVictory();
+            document.getElementById('reset').disabled = false;
+        }
+
+        init();
     </script>
 </body>
 </html>
