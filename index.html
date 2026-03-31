@@ -7,119 +7,148 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
         import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
-        window.aiEngine = pipeline;
+        window.ai = pipeline;
     </script>
     <style>
-        body { background-color: #020617; font-family: ui-sans-serif, system-ui, sans-serif; }
-        .glass-card { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(51, 65, 85, 1); }
-        .accent-text { background: linear-gradient(to right, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        body { background-color: #0f172a; color: white; font-family: 'Inter', sans-serif; }
+        
+        /* The Professional Caption Box */
+        .cc-container {
+            position: absolute;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+        }
+
+        .cc-box {
+            background: rgba(0, 0, 0, 0.8);
+            color: #ffffff;
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-size: 1.4rem;
+            font-weight: 500;
+            text-align: center;
+            line-height: 1.4;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: opacity 0.2s ease;
+        }
+
+        .active-line { color: #60a5fa; font-weight: bold; background: rgba(59, 130, 246, 0.1); border-radius: 4px; }
+        .hidden-cc { opacity: 0; }
     </style>
 </head>
-<body class="text-slate-200 min-h-screen flex flex-col items-center justify-center p-4">
+<body class="flex flex-col items-center justify-center min-h-screen p-6">
 
-    <div class="w-full max-w-xl text-center mb-8">
-        <h1 class="text-7xl font-black tracking-tighter accent-text">Mr.CC</h1>
+    <div class="text-center mb-8">
+        <h1 class="text-6xl font-black text-blue-500 tracking-tighter">Mr.CC</h1>
+        <p class="text-gray-400 font-medium tracking-widest uppercase text-xs mt-2">AI Visual Captioner</p>
     </div>
 
-    <main class="w-full max-w-xl glass-card rounded-3xl p-8 shadow-2xl">
-        <div class="space-y-6">
-            <div>
-                <label class="block text-xs uppercase tracking-widest text-slate-500 font-bold mb-2">Video Link</label>
-                <input id="urlInput" type="text" placeholder="YouTube or Google Playback URL" 
-                       class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-slate-300">
+    <div class="w-full max-w-3xl bg-gray-900 border border-gray-800 p-8 rounded-2xl shadow-2xl space-y-6">
+        
+        <div class="space-y-4">
+            <input id="videoLink" type="text" placeholder="Paste Video Link..." 
+                   class="w-full p-4 rounded-xl bg-gray-800 border border-gray-700 focus:ring-2 focus:ring-blue-500 outline-none text-white transition-all">
+            
+            <div class="border-2 border-dashed border-gray-700 rounded-xl p-6 text-center cursor-pointer hover:bg-gray-800 transition-colors" onclick="document.getElementById('fileInput').click()">
+                <p id="fileName" class="text-gray-500 text-sm">Click to upload MP4 file</p>
+                <input id="fileInput" type="file" accept="video/mp4" class="hidden" onchange="initVideo(this)">
             </div>
 
-            <div class="relative flex items-center py-2">
-                <div class="flex-grow border-t border-slate-800"></div>
-                <span class="mx-4 text-slate-600 text-[10px] font-black uppercase">Or Upload MP4</span>
-                <div class="flex-grow border-t border-slate-800"></div>
-            </div>
-
-            <div class="group relative flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-2xl p-10 hover:border-blue-500/50 transition-all cursor-pointer bg-slate-900/20" onclick="document.getElementById('fileInput').click()">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-slate-600 group-hover:text-blue-400 mb-2 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
-                <span id="fileStatus" class="text-slate-500 text-sm font-medium">Select Video File</span>
-                <input id="fileInput" type="file" accept="video/mp4" class="hidden" onchange="updateUI(this)">
-            </div>
-
-            <button onclick="runAI()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-lg transition-transform active:scale-[0.98]">
-                GENERATE CAPTIONS
+            <button id="actionBtn" onclick="processWithAI()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl transition-transform active:scale-95 shadow-lg">
+                SYNC CAPTION BOX
             </button>
         </div>
 
-        <div id="loader" class="hidden mt-6 text-center space-y-3">
-            <div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
-            <p id="loaderText" class="text-xs text-slate-400 font-mono italic">Initializing AI...</p>
-        </div>
-
-        <div id="resultBox" class="hidden mt-8">
-            <div class="flex justify-between items-center mb-3">
-                <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Transcript</span>
-                <button onclick="copyToClipboard()" class="text-[10px] bg-slate-800 px-2 py-1 rounded text-slate-400 hover:text-white transition-colors">COPY</button>
+        <div id="displayArea" class="hidden space-y-4">
+            <div class="relative bg-black rounded-xl overflow-hidden aspect-video border border-gray-700 shadow-inner">
+                <video id="player" class="w-full h-full" controls></video>
+                
+                <div class="cc-container">
+                    <div id="captionBox" class="cc-box hidden-cc"></div>
+                </div>
             </div>
-            <div id="output" class="bg-black/50 border border-slate-800 p-5 rounded-xl text-slate-300 text-sm leading-relaxed max-h-64 overflow-y-auto whitespace-pre-wrap"></div>
-        </div>
-    </main>
 
-    <footer class="mt-8 text-slate-700 text-[10px] font-bold tracking-[0.2em] uppercase">
-        Mr.CC &bull; 2026
-    </footer>
+            <div id="transcript" class="h-32 overflow-y-auto text-gray-500 text-sm p-4 bg-gray-950 rounded-xl space-y-2 font-mono">
+                <p class="italic text-center">Captions will follow the video timing...</p>
+            </div>
+        </div>
+    </div>
+
+    <p id="loaderStatus" class="mt-6 text-blue-400 font-bold text-sm tracking-widest uppercase"></p>
 
     <script>
-        let whisperModel = null;
+        let whisper = null;
+        let ccData = [];
 
-        function updateUI(input) {
-            if(input.files[0]) document.getElementById('fileStatus').innerText = input.files[0].name;
-        }
-
-        async function runAI() {
-            const file = document.getElementById('fileInput').files[0];
-            const url = document.getElementById('urlInput').value;
-            const loader = document.getElementById('loader');
-            const loaderText = document.getElementById('loaderText');
-            const resultBox = document.getElementById('resultBox');
-            const output = document.getElementById('output');
-
-            loader.classList.remove('hidden');
-            resultBox.classList.add('hidden');
-
-            try {
-                if (!whisperModel) {
-                    loaderText.innerText = "Downloading AI Model (~40MB)...";
-                    whisperModel = await window.aiEngine('automatic-speech-recognition', 'Xenova/whisper-tiny.en');
-                }
-
-                if (file) {
-                    loaderText.innerText = "Analyzing audio data...";
-                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    const arrayBuffer = await file.arrayBuffer();
-                    const decoded = await audioCtx.decodeAudioData(arrayBuffer);
-                    const audioData = decoded.getChannelData(0);
-
-                    loaderText.innerText = "Transcribing with AI...";
-                    const result = await whisperModel(audioData);
-                    output.innerText = result.text;
-                } else if (url) {
-                    output.innerText = "Due to browser security (CORS), direct URL parsing is unavailable on static GitHub Pages. Please upload the MP4 file for AI processing.";
-                } else {
-                    alert("Input required.");
-                    loader.classList.add('hidden');
-                    return;
-                }
-
-                loader.classList.add('hidden');
-                resultBox.classList.remove('hidden');
-            } catch (e) {
-                alert("Error: " + e.message);
-                loader.classList.add('hidden');
+        function initVideo(input) {
+            const file = input.files[0];
+            if (file) {
+                document.getElementById('fileName').innerText = file.name;
+                document.getElementById('player').src = URL.createObjectURL(file);
+                document.getElementById('displayArea').classList.remove('hidden');
             }
         }
 
-        function copyToClipboard() {
-            navigator.clipboard.writeText(document.getElementById('output').innerText);
-            alert("Copied!");
+        async function processWithAI() {
+            const player = document.getElementById('player');
+            const status = document.getElementById('loaderStatus');
+            const transcript = document.getElementById('transcript');
+
+            if (!player.src) return alert("Select a video first.");
+
+            status.innerText = "⚡ AI Model Loading...";
+            
+            try {
+                if (!whisper) {
+                    whisper = await window.ai('automatic-speech-recognition', 'Xenova/whisper-tiny.en');
+                }
+
+                status.innerText = "🎧 Listening & Timing...";
+                const audioCtx = new AudioContext();
+                const res = await fetch(player.src);
+                const decoded = await audioCtx.decodeAudioData(await res.arrayBuffer());
+                
+                const result = await whisper(decoded.getChannelData(0), { return_timestamps: true });
+                ccData = result.chunks;
+
+                // Populate Transcript List
+                transcript.innerHTML = ccData.map((c, i) => `<p id="t-${i}">${c.text}</p>`).join('');
+                status.innerText = "Ready!";
+                setTimeout(() => status.innerText = "", 2000);
+            } catch (e) {
+                status.innerText = "Error: " + e.message;
+            }
         }
+
+        // Real-time Sync Logic
+        const player = document.getElementById('player');
+        const captionBox = document.getElementById('captionBox');
+
+        player.addEventListener('timeupdate', () => {
+            const time = player.currentTime;
+            const currentIdx = ccData.findIndex(c => time >= c.timestamp[0] && time <= c.timestamp[1]);
+
+            if (currentIdx !== -1) {
+                captionBox.innerText = ccData[currentIdx].text;
+                captionBox.classList.remove('hidden-cc');
+
+                // Highlight scrolling text
+                document.querySelectorAll('#transcript p').forEach(p => p.className = '');
+                const activeLine = document.getElementById(`t-${currentIdx}`);
+                if (activeLine) {
+                    activeLine.className = 'active-line text-blue-400';
+                    activeLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            } else {
+                captionBox.classList.add('hidden-cc');
+            }
+        });
     </script>
 </body>
 </html>
