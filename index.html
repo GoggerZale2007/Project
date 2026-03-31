@@ -5,137 +5,135 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mr.CC</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script type="module">
-        import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
-        window.ai = pipeline;
-    </script>
     <style>
         body { background-color: #0f172a; color: white; font-family: 'Inter', sans-serif; }
-        .cc-container {
-            position: absolute; bottom: 12%; left: 50%; transform: translateX(-50%);
-            width: 85%; pointer-events: none; display: flex; justify-content: center; z-index: 50;
-        }
-        .cc-box {
-            background: rgba(0, 0, 0, 0.85); color: #fff; padding: 6px 18px;
-            border-radius: 6px; font-size: 1.25rem; font-weight: 600; text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 8px 20px rgba(0,0,0,0.6);
-        }
-        .active-line { color: #60a5fa; font-weight: 800; background: rgba(30, 41, 59, 0.8); border-radius: 6px; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .cc-box { background: rgba(0, 0, 0, 0.85); color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 1.25rem; font-weight: 600; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); transition: opacity 0.2s; }
+        .active-line { color: #60a5fa; font-weight: 800; background: rgba(30, 41, 59, 0.8); border-radius: 6px; padding: 4px; }
+        .progress-fill { height: 100%; background: #3b82f6; width: 0%; transition: width 0.2s linear; }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4">
 
-    <div class="text-center mb-6">
-        <h1 class="text-6xl font-black text-blue-500 tracking-tighter">Mr.CC</h1>
-        <p class="text-gray-500 text-[10px] uppercase tracking-[0.3em] mt-1">AI Lyric Sync Engine</p>
-    </div>
+    <h1 class="text-6xl font-black text-blue-500 tracking-tighter mb-6">Mr.CC</h1>
 
-    <div class="w-full max-w-3xl bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl space-y-4">
+    <div class="w-full max-w-3xl bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl space-y-6">
         
-        <div class="grid grid-cols-1 gap-3">
-            <input id="videoLink" type="text" placeholder="YouTube or Playback Link (Requires MP4 Upload for AI)" 
-                   class="w-full p-3 rounded-lg bg-slate-800 border border-slate-700 outline-none text-sm">
-            
-            <div class="border border-dashed border-slate-700 rounded-lg p-4 text-center cursor-pointer hover:bg-slate-800 transition" onclick="document.getElementById('fileInput').click()">
-                <p id="fileName" class="text-slate-500 text-xs font-bold uppercase">Select MP4 File</p>
+        <div class="space-y-4">
+            <div class="border-2 border-dashed border-slate-700 rounded-xl p-6 text-center cursor-pointer hover:bg-slate-800 transition" onclick="document.getElementById('fileInput').click()">
+                <p id="fileName" class="text-slate-400 font-bold uppercase text-xs">Upload MP4 File</p>
                 <input id="fileInput" type="file" accept="video/mp4" class="hidden" onchange="initVideo(this)">
             </div>
 
-            <button id="actionBtn" onclick="processWithAI()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-lg transition-all shadow-lg text-sm">
-                SYNC CAPTIONS
+            <button id="syncBtn" onclick="startWorker()" class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white font-black py-4 rounded-xl shadow-lg transition-all">
+                SYNC CAPTIONS (BACKGROUND AI)
             </button>
         </div>
 
-        <div id="displayArea" class="hidden space-y-4">
-            <div class="relative bg-black rounded-lg overflow-hidden aspect-video border border-slate-800">
-                <video id="player" class="w-full h-full" controls></video>
-                <div class="cc-container">
-                    <div id="captionBox" class="cc-box hidden"></div>
+        <div id="progressCont" class="hidden w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+            <div id="progressBar" class="progress-fill"></div>
+        </div>
+
+        <div id="playerArea" class="hidden space-y-4">
+            <div class="relative bg-black rounded-xl overflow-hidden aspect-video border border-slate-800">
+                <video id="vPlayer" class="w-full h-full" controls></video>
+                <div class="absolute bottom-10 left-0 right-0 flex justify-center pointer-events-none">
+                    <div id="ccBox" class="cc-box opacity-0"></div>
                 </div>
             </div>
-
-            <div id="transcript" class="h-28 overflow-y-auto text-slate-500 text-xs p-3 bg-slate-950 rounded-lg space-y-1 font-mono">
-                <p class="text-center opacity-50">Upload and click Sync to start AI...</p>
-            </div>
+            <div id="transcript" class="h-32 overflow-y-auto text-slate-500 text-xs p-4 bg-slate-950 rounded-xl space-y-2 font-mono scroll-smooth"></div>
         </div>
     </div>
 
-    <p id="loaderStatus" class="mt-4 text-blue-400 font-bold text-[10px] tracking-widest uppercase"></p>
+    <p id="status" class="mt-4 text-blue-400 font-bold text-[10px] tracking-widest uppercase"></p>
+
+    <script id="worker-script" type="text/javascript">
+        self.onmessage = async (e) => {
+            const { audioData } = e.data;
+            try {
+                // Import the AI inside the worker
+                const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1');
+                const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en');
+                
+                const result = await transcriber(audioData, { 
+                    return_timestamps: true,
+                    callback_function: (p) => { self.postMessage({ status: 'progress', progress: p.progress || 0 }); }
+                });
+
+                self.postMessage({ status: 'complete', result });
+            } catch (err) {
+                self.postMessage({ status: 'error', error: err.message });
+            }
+        };
+    </script>
 
     <script>
-        let whisper = null;
         let ccData = [];
+        const player = document.getElementById('vPlayer');
+        const ccBox = document.getElementById('ccBox');
 
         function initVideo(input) {
             const file = input.files[0];
             if (file) {
                 document.getElementById('fileName').innerText = file.name;
-                document.getElementById('player').src = URL.createObjectURL(file);
-                document.getElementById('displayArea').classList.remove('hidden');
+                player.src = URL.createObjectURL(file);
+                document.getElementById('playerArea').classList.remove('hidden');
             }
         }
 
-        async function processWithAI() {
-            const player = document.getElementById('player');
-            const status = document.getElementById('loaderStatus');
-            const transcript = document.getElementById('transcript');
+        async function startWorker() {
+            const status = document.getElementById('status');
+            const syncBtn = document.getElementById('syncBtn');
+            const progCont = document.getElementById('progressCont');
+            const progBar = document.getElementById('progressBar');
 
-            if (!player.src) return alert("Please upload a video file first!");
+            syncBtn.disabled = true;
+            progCont.classList.remove('hidden');
+            status.innerText = "Extracting Audio...";
 
-            status.innerText = "⏳ Loading AI (Base Model)...";
-            
-            try {
-                if (!whisper) {
-                    // Using 'base' for better lyrics, 'tiny' is faster but worse with music
-                    whisper = await window.ai('automatic-speech-recognition', 'Xenova/whisper-base.en');
+            // Extract Audio Data for Worker
+            const audioCtx = new AudioContext();
+            const res = await fetch(player.src);
+            const decoded = await audioCtx.decodeAudioData(await res.arrayBuffer());
+            const audioData = decoded.getChannelData(0);
+
+            // Create Worker from the script block
+            const blob = new Blob([document.getElementById('worker-script').textContent], { type: 'text/javascript' });
+            const worker = new Worker(URL.createObjectURL(blob), { type: 'module' });
+
+            worker.postMessage({ audioData });
+            status.innerText = "AI Brain Active (Background)...";
+
+            worker.onmessage = (e) => {
+                if (e.data.status === 'progress') {
+                    progBar.style.width = (e.data.progress || 0) + "%";
+                } else if (e.data.status === 'complete') {
+                    ccData = e.data.result.chunks.filter(c => !c.text.toLowerCase().includes('[music]'));
+                    document.getElementById('transcript').innerHTML = ccData.map((c, i) => `<p id="t-${i}">${c.text}</p>`).join('');
+                    status.innerText = "✅ SYNCED";
+                    progCont.classList.add('hidden');
+                    syncBtn.disabled = false;
+                    worker.terminate();
+                } else if (e.data.status === 'error') {
+                    alert("Worker Error: " + e.data.error);
+                    syncBtn.disabled = false;
                 }
-
-                status.innerText = "🔊 Analyzing Audio & Filtering Music...";
-                const audioCtx = new AudioContext();
-                const res = await fetch(player.src);
-                const decoded = await audioCtx.decodeAudioData(await res.arrayBuffer());
-                
-                const result = await whisper(decoded.getChannelData(0), { 
-                    return_timestamps: true,
-                    // Advanced parameters to reduce "[Music]" hallucinations
-                    suppress_tokens: [-1], 
-                    language: 'en'
-                });
-
-                // Filter out Music tags and empty strings
-                ccData = result.chunks.filter(c => {
-                    const t = c.text.toLowerCase();
-                    return !t.includes('[music]') && !t.includes('[silence]') && t.trim().length > 0;
-                });
-
-                transcript.innerHTML = ccData.map((c, i) => `<p id="t-${i}" class="p-1">${c.text}</p>`).join('');
-                status.innerText = "✅ Done!";
-            } catch (e) {
-                status.innerText = "❌ Error: " + e.message;
-            }
+            };
         }
-
-        const player = document.getElementById('player');
-        const captionBox = document.getElementById('captionBox');
 
         player.addEventListener('timeupdate', () => {
-            const time = player.currentTime;
-            const currentIdx = ccData.findIndex(c => time >= c.timestamp[0] && time <= c.timestamp[1]);
-
-            if (currentIdx !== -1) {
-                captionBox.innerText = ccData[currentIdx].text;
-                captionBox.classList.remove('hidden');
-
-                document.querySelectorAll('#transcript p').forEach(p => p.className = 'p-1');
-                const activeLine = document.getElementById(`t-${currentIdx}`);
-                if (activeLine) {
-                    activeLine.className = 'active-line p-1 text-blue-400';
-                    activeLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const now = player.currentTime;
+            const idx = ccData.findIndex(c => now >= c.timestamp[0] && now <= c.timestamp[1]);
+            if (idx !== -1) {
+                ccBox.innerText = ccData[idx].text;
+                ccBox.style.opacity = "1";
+                document.querySelectorAll('#transcript p').forEach(p => p.className = '');
+                const line = document.getElementById(`t-${idx}`);
+                if (line) {
+                    line.className = 'active-line';
+                    line.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             } else {
-                captionBox.classList.add('hidden');
+                ccBox.style.opacity = "0";
             }
         });
     </script>
