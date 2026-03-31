@@ -11,76 +11,58 @@
     </script>
     <style>
         body { background-color: #0f172a; color: white; font-family: 'Inter', sans-serif; }
-        
-        /* The Professional Caption Box */
         .cc-container {
-            position: absolute;
-            bottom: 15%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            pointer-events: none;
-            display: flex;
-            justify-content: center;
+            position: absolute; bottom: 12%; left: 50%; transform: translateX(-50%);
+            width: 85%; pointer-events: none; display: flex; justify-content: center; z-index: 50;
         }
-
         .cc-box {
-            background: rgba(0, 0, 0, 0.8);
-            color: #ffffff;
-            padding: 8px 20px;
-            border-radius: 8px;
-            font-size: 1.4rem;
-            font-weight: 500;
-            text-align: center;
-            line-height: 1.4;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            transition: opacity 0.2s ease;
+            background: rgba(0, 0, 0, 0.85); color: #fff; padding: 6px 18px;
+            border-radius: 6px; font-size: 1.25rem; font-weight: 600; text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 8px 20px rgba(0,0,0,0.6);
         }
-
-        .active-line { color: #60a5fa; font-weight: bold; background: rgba(59, 130, 246, 0.1); border-radius: 4px; }
-        .hidden-cc { opacity: 0; }
+        .active-line { color: #60a5fa; font-weight: 800; background: rgba(30, 41, 59, 0.8); border-radius: 6px; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen p-6">
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
 
-    <div class="text-center mb-8">
+    <div class="text-center mb-6">
         <h1 class="text-6xl font-black text-blue-500 tracking-tighter">Mr.CC</h1>
-        <p class="text-gray-400 font-medium tracking-widest uppercase text-xs mt-2">AI Visual Captioner</p>
+        <p class="text-gray-500 text-[10px] uppercase tracking-[0.3em] mt-1">AI Lyric Sync Engine</p>
     </div>
 
-    <div class="w-full max-w-3xl bg-gray-900 border border-gray-800 p-8 rounded-2xl shadow-2xl space-y-6">
+    <div class="w-full max-w-3xl bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl space-y-4">
         
-        <div class="space-y-4">
-            <input id="videoLink" type="text" placeholder="Paste Video Link..." 
-                   class="w-full p-4 rounded-xl bg-gray-800 border border-gray-700 focus:ring-2 focus:ring-blue-500 outline-none text-white transition-all">
+        <div class="grid grid-cols-1 gap-3">
+            <input id="videoLink" type="text" placeholder="YouTube or Playback Link (Requires MP4 Upload for AI)" 
+                   class="w-full p-3 rounded-lg bg-slate-800 border border-slate-700 outline-none text-sm">
             
-            <div class="border-2 border-dashed border-gray-700 rounded-xl p-6 text-center cursor-pointer hover:bg-gray-800 transition-colors" onclick="document.getElementById('fileInput').click()">
-                <p id="fileName" class="text-gray-500 text-sm">Click to upload MP4 file</p>
+            <div class="border border-dashed border-slate-700 rounded-lg p-4 text-center cursor-pointer hover:bg-slate-800 transition" onclick="document.getElementById('fileInput').click()">
+                <p id="fileName" class="text-slate-500 text-xs font-bold uppercase">Select MP4 File</p>
                 <input id="fileInput" type="file" accept="video/mp4" class="hidden" onchange="initVideo(this)">
             </div>
 
-            <button id="actionBtn" onclick="processWithAI()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl transition-transform active:scale-95 shadow-lg">
-                SYNC CAPTION BOX
+            <button id="actionBtn" onclick="processWithAI()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-lg transition-all shadow-lg text-sm">
+                SYNC CAPTIONS
             </button>
         </div>
 
         <div id="displayArea" class="hidden space-y-4">
-            <div class="relative bg-black rounded-xl overflow-hidden aspect-video border border-gray-700 shadow-inner">
+            <div class="relative bg-black rounded-lg overflow-hidden aspect-video border border-slate-800">
                 <video id="player" class="w-full h-full" controls></video>
-                
                 <div class="cc-container">
-                    <div id="captionBox" class="cc-box hidden-cc"></div>
+                    <div id="captionBox" class="cc-box hidden"></div>
                 </div>
             </div>
 
-            <div id="transcript" class="h-32 overflow-y-auto text-gray-500 text-sm p-4 bg-gray-950 rounded-xl space-y-2 font-mono">
-                <p class="italic text-center">Captions will follow the video timing...</p>
+            <div id="transcript" class="h-28 overflow-y-auto text-slate-500 text-xs p-3 bg-slate-950 rounded-lg space-y-1 font-mono">
+                <p class="text-center opacity-50">Upload and click Sync to start AI...</p>
             </div>
         </div>
     </div>
 
-    <p id="loaderStatus" class="mt-6 text-blue-400 font-bold text-sm tracking-widest uppercase"></p>
+    <p id="loaderStatus" class="mt-4 text-blue-400 font-bold text-[10px] tracking-widest uppercase"></p>
 
     <script>
         let whisper = null;
@@ -100,33 +82,41 @@
             const status = document.getElementById('loaderStatus');
             const transcript = document.getElementById('transcript');
 
-            if (!player.src) return alert("Select a video first.");
+            if (!player.src) return alert("Please upload a video file first!");
 
-            status.innerText = "⚡ AI Model Loading...";
+            status.innerText = "⏳ Loading AI (Base Model)...";
             
             try {
                 if (!whisper) {
-                    whisper = await window.ai('automatic-speech-recognition', 'Xenova/whisper-tiny.en');
+                    // Using 'base' for better lyrics, 'tiny' is faster but worse with music
+                    whisper = await window.ai('automatic-speech-recognition', 'Xenova/whisper-base.en');
                 }
 
-                status.innerText = "🎧 Listening & Timing...";
+                status.innerText = "🔊 Analyzing Audio & Filtering Music...";
                 const audioCtx = new AudioContext();
                 const res = await fetch(player.src);
                 const decoded = await audioCtx.decodeAudioData(await res.arrayBuffer());
                 
-                const result = await whisper(decoded.getChannelData(0), { return_timestamps: true });
-                ccData = result.chunks;
+                const result = await whisper(decoded.getChannelData(0), { 
+                    return_timestamps: true,
+                    // Advanced parameters to reduce "[Music]" hallucinations
+                    suppress_tokens: [-1], 
+                    language: 'en'
+                });
 
-                // Populate Transcript List
-                transcript.innerHTML = ccData.map((c, i) => `<p id="t-${i}">${c.text}</p>`).join('');
-                status.innerText = "Ready!";
-                setTimeout(() => status.innerText = "", 2000);
+                // Filter out Music tags and empty strings
+                ccData = result.chunks.filter(c => {
+                    const t = c.text.toLowerCase();
+                    return !t.includes('[music]') && !t.includes('[silence]') && t.trim().length > 0;
+                });
+
+                transcript.innerHTML = ccData.map((c, i) => `<p id="t-${i}" class="p-1">${c.text}</p>`).join('');
+                status.innerText = "✅ Done!";
             } catch (e) {
-                status.innerText = "Error: " + e.message;
+                status.innerText = "❌ Error: " + e.message;
             }
         }
 
-        // Real-time Sync Logic
         const player = document.getElementById('player');
         const captionBox = document.getElementById('captionBox');
 
@@ -136,17 +126,16 @@
 
             if (currentIdx !== -1) {
                 captionBox.innerText = ccData[currentIdx].text;
-                captionBox.classList.remove('hidden-cc');
+                captionBox.classList.remove('hidden');
 
-                // Highlight scrolling text
-                document.querySelectorAll('#transcript p').forEach(p => p.className = '');
+                document.querySelectorAll('#transcript p').forEach(p => p.className = 'p-1');
                 const activeLine = document.getElementById(`t-${currentIdx}`);
                 if (activeLine) {
-                    activeLine.className = 'active-line text-blue-400';
+                    activeLine.className = 'active-line p-1 text-blue-400';
                     activeLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             } else {
-                captionBox.classList.add('hidden-cc');
+                captionBox.classList.add('hidden');
             }
         });
     </script>
