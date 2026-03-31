@@ -8,7 +8,7 @@
     <style>
         body { background: #020617; color: white; font-family: 'Inter', sans-serif; }
         .cc-container { position: absolute; bottom: 12%; left: 0; right: 0; display: flex; justify-content: center; pointer-events: none; z-index: 100; }
-        .cc-box { background: rgba(0, 0, 0, 0.9); color: #fff; padding: 10px 24px; border-radius: 12px; font-size: 1.5rem; font-weight: 600; text-align: center; border: 1px solid rgba(255, 255, 255, 0.1); max-width: 85%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: opacity 0.2s; }
+        .cc-box { background: rgba(0, 0, 0, 0.9); color: #fff; padding: 10px 24px; border-radius: 12px; font-size: 1.5rem; font-weight: 600; text-align: center; border: 1px solid rgba(255, 255, 255, 0.1); max-width: 85%; transition: opacity 0.2s; }
         .active-line { color: #60a5fa; font-weight: 800; background: rgba(30, 41, 59, 0.6); border-radius: 8px; }
         .hidden-cc { opacity: 0; }
     </style>
@@ -17,22 +17,22 @@
 
     <div class="text-center mb-6">
         <h1 class="text-7xl font-black text-blue-500 tracking-tighter italic">Mr.CC</h1>
-        <p class="text-slate-500 text-[10px] uppercase tracking-[0.4em] mt-2 font-bold">AI Synchronized Links</p>
+        <p class="text-slate-500 text-[10px] uppercase tracking-[0.4em] mt-2 font-bold">YouTube Lyric Sync</p>
     </div>
 
     <div class="w-full max-w-3xl bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl space-y-6">
         
         <div class="space-y-4">
-            <input id="urlInput" type="text" placeholder="Paste Direct MP4 or Video Link..." 
+            <input id="urlInput" type="text" placeholder="Paste YouTube Link (e.g., https://youtu.be/...)" 
                    class="w-full p-4 rounded-2xl bg-slate-950 border border-slate-800 focus:ring-2 focus:ring-blue-500 outline-none text-slate-300">
 
-            <div class="border-2 border-dashed border-slate-800 rounded-2xl p-6 text-center cursor-pointer hover:bg-slate-800 transition" onclick="document.getElementById('fileInput').click()">
-                <p id="fileName" class="text-slate-500 font-bold uppercase text-xs">Or Upload MP4</p>
+            <div class="border-2 border-dashed border-slate-800 rounded-2xl p-4 text-center cursor-pointer hover:bg-slate-800 transition" onclick="document.getElementById('fileInput').click()">
+                <p id="fileName" class="text-slate-600 font-bold uppercase text-[10px]">Or MP4 Upload</p>
                 <input id="fileInput" type="file" accept="video/mp4" class="hidden" onchange="initVideo(this)">
             </div>
 
             <button id="syncBtn" onclick="processAI()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl shadow-xl transition-all">
-                SYNC CAPTIONS
+                SYNC YOUTUBE CAPTIONS
             </button>
         </div>
 
@@ -59,45 +59,46 @@
 
         window.initVideo = (input) => {
             const file = input.files[0];
-            if (file) {
-                document.getElementById('fileName').innerText = file.name;
-                v.src = URL.createObjectURL(file);
-                document.getElementById('playerArea').classList.remove('hidden');
-            }
+            if (file) { v.src = URL.createObjectURL(file); document.getElementById('playerArea').classList.remove('hidden'); }
         };
 
         window.processAI = async () => {
             const status = document.getElementById('status');
             const btn = document.getElementById('syncBtn');
-            const urlValue = document.getElementById('urlInput').value.trim();
+            const ytUrl = document.getElementById('urlInput').value.trim();
             
-            let videoSource = v.src;
-
-            // If user pasted a link instead of uploading
-            if (urlValue && !videoSource) {
-                // Using a public CORS proxy to bypass security blocks
-                videoSource = `https://corsproxy.io/?${encodeURIComponent(urlValue)}`;
-                v.src = videoSource;
-                document.getElementById('playerArea').classList.remove('hidden');
-            }
-
-            if (!videoSource) return alert("Upload a file or paste a link first.");
-
             btn.disabled = true;
-            status.innerText = "Bypassing CORS & Loading AI...";
+            status.innerText = "Extracting YouTube Audio...";
 
             try {
+                let audioUrl = v.src;
+
+                // IF YOUTUBE LINK: We use a third-party API to get the audio stream
+                if (ytUrl) {
+                    status.innerText = "Bypassing YouTube Security...";
+                    // Using a public Piped/Invidious API proxy to get the stream
+                    const apiUrl = `https://pipedapi.kavin.rocks/streams/${new URL(ytUrl).searchParams.get('v') || ytUrl.split('/').pop()}`;
+                    const apiRes = await fetch(apiUrl);
+                    const apiData = await apiRes.json();
+                    
+                    // Find the audio-only stream
+                    const stream = apiData.audioStreams.find(s => s.mimeType.includes('audio/webm')) || apiData.audioStreams[0];
+                    audioUrl = stream.url;
+                    v.src = audioUrl; // Set player to the stream
+                    document.getElementById('playerArea').classList.remove('hidden');
+                }
+
                 if (!transcriber) {
+                    status.innerText = "Loading...";
                     transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en');
                 }
 
-                status.innerText = "Streaming Audio Data...";
-                const res = await fetch(videoSource);
+                status.innerText = "Downloading & Resampling Audio...";
+                const res = await fetch(audioUrl);
                 const buf = await res.arrayBuffer();
                 const audioCtx = new AudioContext();
                 const decoded = await audioCtx.decodeAudioData(buf);
                 
-                // RAM-Safe Resampling
                 const offlineCtx = new OfflineAudioContext(1, decoded.duration * 16000, 16000);
                 const source = offlineCtx.createBufferSource();
                 source.buffer = decoded;
@@ -105,7 +106,7 @@
                 source.start();
                 const resampled = await offlineCtx.startRendering();
 
-                status.innerText = "Transcribing Lyrics...";
+                status.innerText = "Transcribing...";
                 const result = await transcriber(resampled.getChannelData(0), { 
                     return_timestamps: true,
                     chunk_length_s: 20,
@@ -114,14 +115,12 @@
 
                 ccData = result.chunks.filter(c => !c.text.includes('['));
                 document.getElementById('transcript').innerHTML = ccData.map((c, i) => `<p id="t-${i}" class="p-2">${c.text}</p>`).join('');
-                
-                status.innerText = "✅ it's";
-                btn.disabled = false;
+                status.innerText = "✅ Synced";
             } catch (e) {
-                status.innerText = "❌ Error: Make sure it's a direct video link (mp4/webm).";
+                status.innerText = "❌ YouTube Error: API limit or Invalid Link.";
                 console.error(e);
-                btn.disabled = false;
             }
+            btn.disabled = false;
         };
 
         v.addEventListener('timeupdate', () => {
@@ -138,4 +137,3 @@
     </script>
 </body>
 </html>
-httEhtRRR
