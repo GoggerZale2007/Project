@@ -2,160 +2,124 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Gnome Sort</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mr.CC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
+        window.aiEngine = pipeline;
+    </script>
     <style>
-        :root { 
-            --bg: #000000; 
-            --bar: #ffffff; 
-            --active: #ff0000; 
-            --success: #00ff00;
-        }
-        body { 
-            background: var(--bg); 
-            color: white; 
-            font-family: 'Courier New', monospace;
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            height: 100vh; 
-            margin: 0; 
-        }
-        #visualizer { 
-            display: flex; 
-            align-items: flex-end; 
-            height: 250px; 
-            width: 400px;
-            gap: 8px; 
-            padding: 40px;
-            background: #000;
-        }
-        .bar { 
-            flex: 1; 
-            background: var(--bar); 
-            opacity: 0.8;
-            transition: height 0.08s ease-in-out; 
-        }
-        .active { 
-            background: var(--active) !important; 
-            opacity: 1;
-            box-shadow: 0 0 20px var(--active);
-        }
-        .success { 
-            background: var(--success) !important;
-            box-shadow: 0 0 10px var(--success);
-        }
-        .controls { margin-top: 50px; }
-        button { 
-            background: none; 
-            color: #555; 
-            border: 1px solid #333; 
-            padding: 10px 20px; 
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-        button:hover { color: #fff; border-color: #fff; }
+        body { background-color: #020617; font-family: ui-sans-serif, system-ui, sans-serif; }
+        .glass-card { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(51, 65, 85, 1); }
+        .accent-text { background: linear-gradient(to right, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     </style>
 </head>
-<body>
+<body class="text-slate-200 min-h-screen flex flex-col items-center justify-center p-4">
 
-    <div id="visualizer"></div>
-
-    <div class="controls">
-        <button id="start" onclick="runSort()">Execute Sort</button>
+    <div class="w-full max-w-xl text-center mb-8">
+        <h1 class="text-7xl font-black tracking-tighter accent-text">Mr.CC</h1>
     </div>
 
+    <main class="w-full max-w-xl glass-card rounded-3xl p-8 shadow-2xl">
+        <div class="space-y-6">
+            <div>
+                <label class="block text-xs uppercase tracking-widest text-slate-500 font-bold mb-2">Video Link</label>
+                <input id="urlInput" type="text" placeholder="YouTube or Google Playback URL" 
+                       class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-slate-300">
+            </div>
+
+            <div class="relative flex items-center py-2">
+                <div class="flex-grow border-t border-slate-800"></div>
+                <span class="mx-4 text-slate-600 text-[10px] font-black uppercase">Or Upload MP4</span>
+                <div class="flex-grow border-t border-slate-800"></div>
+            </div>
+
+            <div class="group relative flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-2xl p-10 hover:border-blue-500/50 transition-all cursor-pointer bg-slate-900/20" onclick="document.getElementById('fileInput').click()">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-slate-600 group-hover:text-blue-400 mb-2 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                <span id="fileStatus" class="text-slate-500 text-sm font-medium">Select Video File</span>
+                <input id="fileInput" type="file" accept="video/mp4" class="hidden" onchange="updateUI(this)">
+            </div>
+
+            <button onclick="runAI()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-lg transition-transform active:scale-[0.98]">
+                GENERATE CAPTIONS
+            </button>
+        </div>
+
+        <div id="loader" class="hidden mt-6 text-center space-y-3">
+            <div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+            <p id="loaderText" class="text-xs text-slate-400 font-mono italic">Initializing AI...</p>
+        </div>
+
+        <div id="resultBox" class="hidden mt-8">
+            <div class="flex justify-between items-center mb-3">
+                <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Transcript</span>
+                <button onclick="copyToClipboard()" class="text-[10px] bg-slate-800 px-2 py-1 rounded text-slate-400 hover:text-white transition-colors">COPY</button>
+            </div>
+            <div id="output" class="bg-black/50 border border-slate-800 p-5 rounded-xl text-slate-300 text-sm leading-relaxed max-h-64 overflow-y-auto whitespace-pre-wrap"></div>
+        </div>
+    </main>
+
+    <footer class="mt-8 text-slate-700 text-[10px] font-bold tracking-[0.2em] uppercase">
+        Mr.CC &bull; 2026
+    </footer>
+
     <script>
-        const container = document.getElementById('visualizer');
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let arr = [];
-        const n_elements = 13; // Exactly 13 towers like the video
+        let whisperModel = null;
 
-        function init() {
-            // Generate 13 random heights
-            arr = Array.from({length: n_elements}, () => Math.floor(Math.random() * 80) + 15);
-            render();
+        function updateUI(input) {
+            if(input.files[0]) document.getElementById('fileStatus').innerText = input.files[0].name;
         }
 
-        function render(activePos = -1, isDone = false) {
-            container.innerHTML = '';
-            arr.forEach((val, i) => {
-                const bar = document.createElement('div');
-                bar.className = 'bar';
-                if (i === activePos) bar.classList.add('active');
-                if (isDone) bar.classList.add('success');
-                bar.style.height = `${val}%`;
-                container.appendChild(bar);
-            });
-        }
+        async function runAI() {
+            const file = document.getElementById('fileInput').files[0];
+            const url = document.getElementById('urlInput').value;
+            const loader = document.getElementById('loader');
+            const loaderText = document.getElementById('loaderText');
+            const resultBox = document.getElementById('resultBox');
+            const output = document.getElementById('output');
 
-        function playSound(val, isSwap = false) {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            
-            // Use 'square' or 'triangle' for that retro "blip" sound in the video
-            osc.type = isSwap ? 'triangle' : 'sine';
-            
-            // Map height to a sharp musical frequency
-            const freq = 300 + (val * 12);
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            
-            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.05);
-            
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.05);
-        }
+            loader.classList.remove('hidden');
+            resultBox.classList.add('hidden');
 
-        async function playVictory() {
-            const notes = [523.25, 659.25, 783.99, 1046.50];
-            for (let f of notes) {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.frequency.value = f;
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.4);
-                await new Promise(r => setTimeout(r, 100));
-            }
-        }
-
-        // Exact logic from your provided image
-        async function runSort() {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            
-            let pos = 0;
-            const n = arr.length; //
-
-            while (pos < n) { //
-                render(pos);
-                playSound(arr[pos], false);
-                await new Promise(r => setTimeout(r, 80));
-
-                if (pos === 0 || arr[pos] >= arr[pos - 1]) { //
-                    pos++; //
-                } else {
-                    // Swap logic from image
-                    [arr[pos], arr[pos - 1]] = [arr[pos - 1], arr[pos]]; //
-                    pos--; //
-                    
-                    playSound(arr[pos], true); // High pitch for the swap
-                    render(pos);
-                    await new Promise(r => setTimeout(r, 80));
+            try {
+                if (!whisperModel) {
+                    loaderText.innerText = "Downloading AI Model (~40MB)...";
+                    whisperModel = await window.aiEngine('automatic-speech-recognition', 'Xenova/whisper-tiny.en');
                 }
+
+                if (file) {
+                    loaderText.innerText = "Analyzing audio data...";
+                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const arrayBuffer = await file.arrayBuffer();
+                    const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+                    const audioData = decoded.getChannelData(0);
+
+                    loaderText.innerText = "Transcribing with AI...";
+                    const result = await whisperModel(audioData);
+                    output.innerText = result.text;
+                } else if (url) {
+                    output.innerText = "Due to browser security (CORS), direct URL parsing is unavailable on static GitHub Pages. Please upload the MP4 file for AI processing.";
+                } else {
+                    alert("Input required.");
+                    loader.classList.add('hidden');
+                    return;
+                }
+
+                loader.classList.add('hidden');
+                resultBox.classList.remove('hidden');
+            } catch (e) {
+                alert("Error: " + e.message);
+                loader.classList.add('hidden');
             }
-            
-            render(-1, true);
-            await playVictory();
         }
 
-        init();
+        function copyToClipboard() {
+            navigator.clipboard.writeText(document.getElementById('output').innerText);
+            alert("Copied!");
+        }
     </script>
 </body>
 </html>
