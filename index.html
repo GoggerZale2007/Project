@@ -6,136 +6,136 @@
     <title>Mr.CC</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #0f172a; color: white; font-family: 'Inter', sans-serif; }
-        .cc-box { background: rgba(0, 0, 0, 0.85); color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 1.25rem; font-weight: 600; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); transition: opacity 0.2s; }
-        .active-line { color: #60a5fa; font-weight: 800; background: rgba(30, 41, 59, 0.8); border-radius: 6px; padding: 4px; }
-        .progress-fill { height: 100%; background: #3b82f6; width: 0%; transition: width 0.2s linear; }
+        body { background: #020617; color: white; font-family: 'Inter', sans-serif; }
+        .cc-container { position: absolute; bottom: 12%; left: 0; right: 0; display: flex; justify-content: center; pointer-events: none; z-index: 100; }
+        .cc-box { background: rgba(0, 0, 0, 0.9); color: #fff; padding: 10px 24px; border-radius: 12px; font-size: 1.5rem; font-weight: 600; text-align: center; border: 1px solid rgba(255, 255, 255, 0.1); max-width: 85%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: opacity 0.2s; }
+        .active-line { color: #60a5fa; font-weight: 800; background: rgba(30, 41, 59, 0.6); border-radius: 8px; }
+        .hidden-cc { opacity: 0; }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4">
 
-    <h1 class="text-6xl font-black text-blue-500 tracking-tighter mb-6">Mr.CC</h1>
+    <div class="text-center mb-6">
+        <h1 class="text-7xl font-black text-blue-500 tracking-tighter italic">Mr.CC</h1>
+        <p class="text-slate-500 text-[10px] uppercase tracking-[0.4em] mt-2 font-bold">AI Synchronized Links</p>
+    </div>
 
-    <div class="w-full max-w-3xl bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl space-y-6">
+    <div class="w-full max-w-3xl bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl space-y-6">
         
         <div class="space-y-4">
-            <div class="border-2 border-dashed border-slate-700 rounded-xl p-6 text-center cursor-pointer hover:bg-slate-800 transition" onclick="document.getElementById('fileInput').click()">
-                <p id="fileName" class="text-slate-400 font-bold uppercase text-xs">Upload MP4 File</p>
+            <input id="urlInput" type="text" placeholder="Paste Direct MP4 or Video Link..." 
+                   class="w-full p-4 rounded-2xl bg-slate-950 border border-slate-800 focus:ring-2 focus:ring-blue-500 outline-none text-slate-300">
+
+            <div class="border-2 border-dashed border-slate-800 rounded-2xl p-6 text-center cursor-pointer hover:bg-slate-800 transition" onclick="document.getElementById('fileInput').click()">
+                <p id="fileName" class="text-slate-500 font-bold uppercase text-xs">Or Upload MP4</p>
                 <input id="fileInput" type="file" accept="video/mp4" class="hidden" onchange="initVideo(this)">
             </div>
 
-            <button id="syncBtn" onclick="startWorker()" class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white font-black py-4 rounded-xl shadow-lg transition-all">
-                SYNC CAPTIONS (BACKGROUND AI)
+            <button id="syncBtn" onclick="processAI()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl shadow-xl transition-all">
+                SYNC CAPTIONS
             </button>
         </div>
 
-        <div id="progressCont" class="hidden w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-            <div id="progressBar" class="progress-fill"></div>
-        </div>
-
-        <div id="playerArea" class="hidden space-y-4">
-            <div class="relative bg-black rounded-xl overflow-hidden aspect-video border border-slate-800">
-                <video id="vPlayer" class="w-full h-full" controls></video>
-                <div class="absolute bottom-10 left-0 right-0 flex justify-center pointer-events-none">
-                    <div id="ccBox" class="cc-box opacity-0"></div>
+        <div id="playerArea" class="hidden space-y-6">
+            <div class="relative bg-black rounded-2xl overflow-hidden aspect-video border border-slate-800">
+                <video id="vPlayer" class="w-full h-full" controls crossorigin="anonymous"></video>
+                <div class="cc-container">
+                    <div id="ccBox" class="cc-box hidden-cc"></div>
                 </div>
             </div>
-            <div id="transcript" class="h-32 overflow-y-auto text-slate-500 text-xs p-4 bg-slate-950 rounded-xl space-y-2 font-mono scroll-smooth"></div>
+            <div id="transcript" class="h-32 overflow-y-auto text-slate-500 text-xs p-4 bg-black/40 rounded-xl space-y-2 font-mono scroll-smooth"></div>
         </div>
     </div>
 
-    <p id="status" class="mt-4 text-blue-400 font-bold text-[10px] tracking-widest uppercase"></p>
+    <p id="status" class="mt-6 text-blue-400 font-bold text-[10px] tracking-widest uppercase"></p>
 
-    <script id="worker-script" type="text/javascript">
-        self.onmessage = async (e) => {
-            const { audioData } = e.data;
-            try {
-                // Import the AI inside the worker
-                const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1');
-                const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en');
-                
-                const result = await transcriber(audioData, { 
-                    return_timestamps: true,
-                    callback_function: (p) => { self.postMessage({ status: 'progress', progress: p.progress || 0 }); }
-                });
-
-                self.postMessage({ status: 'complete', result });
-            } catch (err) {
-                self.postMessage({ status: 'error', error: err.message });
-            }
-        };
-    </script>
-
-    <script>
+    <script type="module">
+        import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
+        
         let ccData = [];
-        const player = document.getElementById('vPlayer');
+        let transcriber = null;
+        const v = document.getElementById('vPlayer');
         const ccBox = document.getElementById('ccBox');
 
-        function initVideo(input) {
+        window.initVideo = (input) => {
             const file = input.files[0];
             if (file) {
                 document.getElementById('fileName').innerText = file.name;
-                player.src = URL.createObjectURL(file);
+                v.src = URL.createObjectURL(file);
                 document.getElementById('playerArea').classList.remove('hidden');
             }
-        }
+        };
 
-        async function startWorker() {
+        window.processAI = async () => {
             const status = document.getElementById('status');
-            const syncBtn = document.getElementById('syncBtn');
-            const progCont = document.getElementById('progressCont');
-            const progBar = document.getElementById('progressBar');
+            const btn = document.getElementById('syncBtn');
+            const urlValue = document.getElementById('urlInput').value.trim();
+            
+            let videoSource = v.src;
 
-            syncBtn.disabled = true;
-            progCont.classList.remove('hidden');
-            status.innerText = "Extracting Audio...";
+            // If user pasted a link instead of uploading
+            if (urlValue && !videoSource) {
+                // Using a public CORS proxy to bypass security blocks
+                videoSource = `https://corsproxy.io/?${encodeURIComponent(urlValue)}`;
+                v.src = videoSource;
+                document.getElementById('playerArea').classList.remove('hidden');
+            }
 
-            // Extract Audio Data for Worker
-            const audioCtx = new AudioContext();
-            const res = await fetch(player.src);
-            const decoded = await audioCtx.decodeAudioData(await res.arrayBuffer());
-            const audioData = decoded.getChannelData(0);
+            if (!videoSource) return alert("Upload a file or paste a link first.");
 
-            // Create Worker from the script block
-            const blob = new Blob([document.getElementById('worker-script').textContent], { type: 'text/javascript' });
-            const worker = new Worker(URL.createObjectURL(blob), { type: 'module' });
+            btn.disabled = true;
+            status.innerText = "Bypassing CORS & Loading AI...";
 
-            worker.postMessage({ audioData });
-            status.innerText = "AI Brain Active (Background)...";
-
-            worker.onmessage = (e) => {
-                if (e.data.status === 'progress') {
-                    progBar.style.width = (e.data.progress || 0) + "%";
-                } else if (e.data.status === 'complete') {
-                    ccData = e.data.result.chunks.filter(c => !c.text.toLowerCase().includes('[music]'));
-                    document.getElementById('transcript').innerHTML = ccData.map((c, i) => `<p id="t-${i}">${c.text}</p>`).join('');
-                    status.innerText = "✅ SYNCED";
-                    progCont.classList.add('hidden');
-                    syncBtn.disabled = false;
-                    worker.terminate();
-                } else if (e.data.status === 'error') {
-                    alert("Worker Error: " + e.data.error);
-                    syncBtn.disabled = false;
+            try {
+                if (!transcriber) {
+                    transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en');
                 }
-            };
-        }
 
-        player.addEventListener('timeupdate', () => {
-            const now = player.currentTime;
+                status.innerText = "Streaming Audio Data...";
+                const res = await fetch(videoSource);
+                const buf = await res.arrayBuffer();
+                const audioCtx = new AudioContext();
+                const decoded = await audioCtx.decodeAudioData(buf);
+                
+                // RAM-Safe Resampling
+                const offlineCtx = new OfflineAudioContext(1, decoded.duration * 16000, 16000);
+                const source = offlineCtx.createBufferSource();
+                source.buffer = decoded;
+                source.connect(offlineCtx.destination);
+                source.start();
+                const resampled = await offlineCtx.startRendering();
+
+                status.innerText = "Transcribing Lyrics...";
+                const result = await transcriber(resampled.getChannelData(0), { 
+                    return_timestamps: true,
+                    chunk_length_s: 20,
+                    suppress_non_speech_tokens: true
+                });
+
+                ccData = result.chunks.filter(c => !c.text.includes('['));
+                document.getElementById('transcript').innerHTML = ccData.map((c, i) => `<p id="t-${i}" class="p-2">${c.text}</p>`).join('');
+                
+                status.innerText = "✅ it's";
+                btn.disabled = false;
+            } catch (e) {
+                status.innerText = "❌ Error: Make sure it's a direct video link (mp4/webm).";
+                console.error(e);
+                btn.disabled = false;
+            }
+        };
+
+        v.addEventListener('timeupdate', () => {
+            const now = v.currentTime;
             const idx = ccData.findIndex(c => now >= c.timestamp[0] && now <= c.timestamp[1]);
             if (idx !== -1) {
                 ccBox.innerText = ccData[idx].text;
-                ccBox.style.opacity = "1";
-                document.querySelectorAll('#transcript p').forEach(p => p.className = '');
+                ccBox.classList.remove('hidden-cc');
+                document.querySelectorAll('#transcript p').forEach(p => p.classList.remove('active-line', 'text-blue-400'));
                 const line = document.getElementById(`t-${idx}`);
-                if (line) {
-                    line.className = 'active-line';
-                    line.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            } else {
-                ccBox.style.opacity = "0";
-            }
+                if (line) { line.classList.add('active-line', 'text-blue-400'); line.scrollIntoView({behavior:'smooth', block:'center'}); }
+            } else { ccBox.classList.add('hidden-cc'); }
         });
     </script>
 </body>
 </html>
+httEhtRRR
