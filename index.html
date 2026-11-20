@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WebOS</title>
+<style>
+:root{--page:#d9d3e0;--bg:#fef7ff;--sf:#ece6f0;--tx:#1d1b20;--tx2:#49454f;--ac:#6750a4;--on:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--page:#0e0d11}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:var(--page);display:grid;place-items:center;font-family:Roboto,"Google Sans",system-ui,sans-serif;overflow:hidden;user-select:none}
+#phone{--bg:#fef7ff;--sf:#ece6f0;--tx:#1d1b20;--tx2:#49454f;--ac:#6750a4;--on:#fff;position:relative;width:min(100vw,392px);height:min(100%,820px);border-radius:38px;overflow:hidden;background:#000;box-shadow:0 0 0 8px #1c1b1f,0 30px 80px #0006;color:var(--tx)}
+#phone.dark{--bg:#141218;--sf:#2b2930;--tx:#e6e0e9;--tx2:#cac4d0;--ac:#d0bcff;--on:#381e72}
+@media(max-width:500px){#phone{width:100vw;height:100%;border-radius:0;box-shadow:none}}
+.abs{position:absolute;inset:0}
+#wall{background-size:cover;transition:background .5s}
+#dim{background:#000;pointer-events:none;z-index:90;opacity:0}
+#torch{background:#fff;opacity:.0;pointer-events:none;z-index:89;mix-blend-mode:soft-light;transition:opacity .3s}
+#status{position:absolute;top:0;left:0;right:0;height:32px;z-index:70;display:flex;align-items:center;justify-content:space-between;padding:4px 20px 0;font-size:13px;font-weight:500;color:var(--tx);pointer-events:none}
+#phone.light #status{color:#fff}
+#status .r{display:flex;gap:6px;align-items:center}
+#status svg{fill:currentColor;height:13px}
+#nav{position:absolute;bottom:0;left:0;right:0;height:48px;z-index:70;display:flex;justify-content:center;gap:56px;align-items:center;color:var(--tx)}
+#phone.light #nav{color:#fff}
+#nav button{background:none;border:0;color:inherit;width:48px;height:48px;display:grid;place-items:center;cursor:pointer;border-radius:50%}
+#nav button:active{background:#8883}
+#nav svg{width:22px;height:22px;fill:currentColor}
+#home{inset:0 0 48px;padding:44px 16px 0;display:flex;flex-direction:column;color:#fff}
+.wid{padding:14px 8px 18px}
+.wid .t{font-size:72px;font-weight:300;line-height:1;letter-spacing:-2px}
+.wid .d{font-size:16px;margin-top:6px;opacity:.95}
+.wid .w{font-size:14px;margin-top:4px;opacity:.85}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px 4px;margin-top:10px}
+.it{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11.5px;cursor:pointer;background:none;border:0;color:inherit;text-shadow:0 1px 3px #0006;font-family:inherit}
+.ic{width:56px;height:56px;border-radius:20px;display:grid;place-items:center;font-size:28px;box-shadow:0 2px 6px #0003;transition:transform .15s}
+.it:active .ic{transform:scale(.9)}
+.sp{flex:1}
+.search{display:flex;align-items:center;gap:10px;background:#fffd;color:#1d1b20;border-radius:28px;height:50px;padding:0 18px;margin:8px 4px 12px;font-size:15px;cursor:pointer;text-shadow:none}
+.dock{display:flex;justify-content:space-around;padding-bottom:6px}
+.dock .it{font-size:0}
+.app{inset:0 0 48px;background:var(--bg);padding-top:32px;z-index:30;display:none;flex-direction:column;overflow:hidden;transform-origin:50% 90%}
+.app.show{display:flex;animation:pop .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes pop{from{transform:scale(.7);opacity:0;border-radius:40px}}
+.hd{font-size:22px;padding:14px 20px 10px;font-weight:500;display:flex;justify-content:space-between;align-items:center}
+.body{flex:1;overflow:auto;padding:0 16px 16px}
+button{font-family:inherit}
+.btn{background:var(--ac);color:var(--on);border:0;border-radius:20px;padding:10px 22px;font-size:14px;cursor:pointer}
+.fab{position:absolute;right:18px;bottom:18px;width:56px;height:56px;border-radius:18px;background:var(--ac);color:var(--on);border:0;font-size:28px;cursor:pointer;box-shadow:0 4px 10px #0004}
+#drawer{inset:0 0 48px;background:var(--bg);opacity:.97;z-index:40;padding:44px 16px 0;transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column}
+#drawer.open{transform:none}
+#drawer input{border:0;background:var(--sf);color:var(--tx);height:48px;border-radius:24px;padding:0 20px;font-size:15px;outline:none;margin-bottom:18px}
+#drawer .grid{overflow:auto;align-content:start;flex:1}
+#drawer .it{color:var(--tx);text-shadow:none}
+#shade{inset:0 0 auto;max-height:100%;background:var(--bg);z-index:80;padding:40px 16px 16px;transform:translateY(-102%);transition:transform .3s cubic-bezier(.2,.8,.2,1);border-radius:0 0 28px 28px;overflow:auto;height:100%}
+#shade.open{transform:none}
+.qs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}
+.tile{display:flex;align-items:center;gap:10px;height:62px;border-radius:31px;background:var(--sf);color:var(--tx);border:0;padding:0 18px;font-size:14px;cursor:pointer;text-align:left}
+.tile.on{background:var(--ac);color:var(--on)}
+.tile small{display:block;font-size:11px;opacity:.8}
+input[type=range]{width:100%;accent-color:var(--ac);margin:8px 0 14px}
+.nt{background:var(--sf);border-radius:20px;padding:12px 16px;margin-bottom:8px;font-size:13px;cursor:pointer}
+.nt b{display:block;font-size:14px;margin-bottom:2px}
+#recents{inset:0 0 48px;background:#000b;z-index:45;display:none;flex-direction:column;justify-content:center;padding-top:30px}
+#recents.open{display:flex}
+.rc{display:flex;gap:14px;overflow-x:auto;padding:0 40px;scroll-snap-type:x mandatory;align-items:center;height:70%}
+.card{flex:0 0 78%;height:100%;scroll-snap-align:center;background:var(--bg);border-radius:24px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;position:relative;cursor:pointer;color:var(--tx)}
+.card .ic{width:84px;height:84px;font-size:42px;border-radius:30px}
+.card .x{position:absolute;top:10px;right:14px;background:none;border:0;color:var(--tx);font-size:22px;cursor:pointer}
+.empty{color:#fff;text-align:center;font-size:16px}
+#boot{inset:0;background:#000;z-index:200;display:grid;place-items:center;color:#fff;font-size:34px;font-weight:300;letter-spacing:3px;transition:opacity .6s}
+.calc{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:0 14px 14px}
+.calc button{height:62px;border-radius:24px;border:0;background:var(--sf);color:var(--tx);font-size:22px;cursor:pointer}
+.calc .op{background:#e8def8;color:#1d192b}.calc .eq{background:var(--ac);color:var(--on)}
+.dark .calc .op{background:#4a4458;color:#e8def8}
+.scr{text-align:right;padding:10px 24px;flex:1;display:flex;flex-direction:column;justify-content:flex-end}
+.scr .e{font-size:20px;color:var(--tx2);min-height:26px}.scr .r{font-size:54px;font-weight:300;overflow:hidden}
+.tabs{display:flex;margin:0 16px 10px;background:var(--sf);border-radius:20px;padding:4px}
+.tabs button{flex:1;border:0;background:none;color:var(--tx);padding:8px;border-radius:16px;cursor:pointer;font-size:14px}
+.tabs .on{background:var(--ac);color:var(--on)}
+.row{display:flex;justify-content:space-between;align-items:center;background:var(--sf);border-radius:18px;padding:14px 18px;margin-bottom:8px;font-size:15px}
+.sw{width:48px;height:28px;border-radius:14px;background:#79747e;position:relative;cursor:pointer;border:0;flex:none;transition:.2s}
+.sw::after{content:"";position:absolute;top:4px;left:4px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}
+.sw.on{background:var(--ac)}.sw.on::after{left:24px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;gap:4px;font-size:14px}
+.cal span{height:40px;display:grid;place-items:center;border-radius:50%}.cal .h{color:var(--tx2);font-size:12px}.cal .td{background:var(--ac);color:var(--on)}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}.g3 div{aspect-ratio:1;cursor:pointer;border-radius:6px}
+.note{background:var(--sf);border-radius:20px;padding:14px 18px;margin-bottom:8px;cursor:pointer}.note b{display:block;margin-bottom:4px}.note span{color:var(--tx2);font-size:13px}
+textarea{width:100%;height:100%;background:none;border:0;color:var(--tx);font:16px/1.5 inherit;outline:none;resize:none;user-select:text}
+.msgs{flex:1;overflow:auto;padding:8px 16px;display:flex;flex-direction:column;gap:6px}
+.m{max-width:75%;padding:10px 14px;border-radius:20px;font-size:15px}.m.me{align-self:flex-end;background:var(--ac);color:var(--on)}.m.you{align-self:flex-start;background:var(--sf)}
+.compose{display:flex;gap:8px;padding:10px 12px}.compose input{flex:1;height:46px;border-radius:23px;border:0;background:var(--sf);color:var(--tx);padding:0 18px;font-size:15px;outline:none;user-select:text}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 24px}.pad button{height:62px;border:0;border-radius:31px;background:var(--sf);color:var(--tx);font-size:24px;cursor:pointer}
+.big{font-size:44px;text-align:center;font-weight:300;font-variant-numeric:tabular-nums;padding:20px 0}
+.ic{color:#fff;box-shadow:inset 0 -3px 6px #0003,inset 0 2px 3px #fff5,0 3px 8px #0004}.ic svg{width:54%;height:54%}
+.tile svg{flex:none}.row,.tile,.note,.nt{transition:transform .12s}.row:active,.tile:active,.note:active,.nt:active{transform:scale(.98)}
+.rb{display:grid;place-items:center;width:56px;height:56px;padding:0;border-radius:20px}
+.punch{position:absolute;top:10px;left:50%;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#2a3550,#000 60%);z-index:75;box-shadow:0 0 0 2px #0a0a0a}
+.btn,.tile,.note,.nt,.row,#nav button{position:relative;overflow:hidden}
+.rip{position:absolute;border-radius:50%;background:currentColor;opacity:.2;transform:scale(0);animation:rp .5s ease-out forwards;pointer-events:none}@keyframes rp{to{transform:scale(1);opacity:0}}
+.app.show{animation:pop .38s cubic-bezier(.05,.7,.1,1)}@keyframes pop{from{transform:scale(.2);opacity:0;border-radius:50px}}
+.app.out{animation:pout .22s cubic-bezier(.3,0,.8,.15) forwards}@keyframes pout{to{transform:scale(.3) translateY(60px);opacity:0;border-radius:50px}}
+@keyframes tl{from{opacity:0;transform:translateY(14px)}}
+#shade.open .tile,#drawer.open .it,.card{animation:tl .4s cubic-bezier(.2,.8,.2,1) both}
+.sw::after{transition:left .25s cubic-bezier(.3,1.4,.5,1),width .15s}.sw:active::after{width:26px}
+.body.pg{animation:pgin .3s cubic-bezier(.2,.8,.2,1)}@keyframes pgin{from{opacity:0;transform:translateX(36px)}}
+.sec{font-size:13px;color:var(--ac);margin:18px 6px 8px;font-weight:500}.row small{font-size:12px}
+.toast{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);background:#322f35;color:#f5eff7;padding:10px 20px;border-radius:20px;z-index:95;font-size:14px;max-width:80%;animation:ts 2.3s both;pointer-events:none}@keyframes ts{0%{opacity:0;transform:translate(-50%,20px)}10%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+.tile{padding:0 14px 0 10px;gap:12px}.tile .ci{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--bg);color:var(--tx2)}.tile.on{background:var(--tx);color:var(--bg)}.tile.on .ci{background:var(--bg);color:var(--tx)}.tile small{margin-top:1px}
+#br{-webkit-appearance:none;appearance:none;width:100%;height:52px;border-radius:26px;background:var(--sf);overflow:hidden;margin:0 0 14px;display:block}#br::-webkit-slider-thumb{-webkit-appearance:none;width:4px;height:52px;background:var(--bg);box-shadow:-600px 0 0 600px var(--tx)}#br::-moz-range-progress{background:var(--tx);height:52px}#br::-moz-range-thumb{width:4px;height:52px;border:0;background:var(--bg);border-radius:0}#br::-moz-range-track{background:var(--sf);height:52px}
+.act{display:flex;gap:8px;align-items:center;margin-bottom:14px}.pill{flex:1;height:48px;border-radius:24px;background:var(--sf);display:flex;align-items:center;padding:0 18px;font-size:14px}.rb2{width:48px;height:48px;border-radius:50%;border:0;background:var(--sf);color:var(--tx);display:grid;place-items:center;cursor:pointer}.rb2.pw{background:var(--tx);color:var(--bg)}
+.ng .nt{display:flex;gap:14px;align-items:center;border-radius:8px;margin-bottom:3px}.ng .nt:first-child{border-radius:26px 26px 8px 8px}.ng .nt:last-child{border-radius:8px 8px 26px 26px}.ng .nt:only-child{border-radius:26px}.nt .ni{width:36px;height:36px;border-radius:50%;flex:none;box-shadow:none}
+#hu{position:absolute;top:36px;left:10px;right:10px;z-index:92;background:var(--sf);color:var(--tx);border-radius:28px;padding:14px 16px;box-shadow:0 8px 24px #0005;transform:translateY(-400px);transition:transform .5s cubic-bezier(.2,.9,.3,1.2)}#hu.on{transform:none}
+.cb{flex:1;height:48px;border-radius:24px;border:0;color:#fff;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+.sapp{--sbg:#e6e6fb;--scard:#f6f4ff;background:var(--sbg)}#phone.dark .sapp{--sbg:#141218;--scard:#2b2930}.sapp .row{background:var(--scard)}.sapp .hd{padding-top:20px}
+.sq{display:flex;align-items:center;gap:14px;height:56px;border-radius:28px;background:#fff;border:1.5px solid #a9a6d8;padding:0 22px;margin:6px 0 16px;color:#5b5880}#phone.dark .sq{background:var(--scard);color:var(--tx2)}.sq input{flex:1;min-width:0;border:0;background:none;outline:none;font:inherit;font-size:17px;color:var(--tx);user-select:text}
+.grp{display:flex;flex-direction:column;gap:2px;margin-bottom:16px}.gi{display:flex;align-items:center;gap:16px;background:var(--scard);padding:16px 20px;min-height:76px;border-radius:6px;cursor:pointer;position:relative;overflow:hidden}.gi:first-child{border-radius:28px 28px 6px 6px}.gi:last-child{border-radius:6px 6px 28px 28px}.gi:only-child{border-radius:28px}.ic2{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;flex:none}
+.dots{display:flex;gap:6px;justify-content:center;margin:0 0 6px}.dots i{width:6px;height:6px;border-radius:3px;background:#fff8;transition:.3s}.dots i.on{width:18px;background:#fff}
+.wsw{position:absolute;inset:0;background:var(--bg);z-index:6;padding:44px 14px 14px;overflow:auto;opacity:0;transform:scale(1.06);pointer-events:none;transition:opacity .28s,transform .35s cubic-bezier(.2,.8,.2,1)}.wsw.on{opacity:1;transform:none;pointer-events:auto}
+.wtg{display:grid;grid-template-columns:1fr 1fr;gap:12px}.wt{background:var(--sf);border-radius:22px;padding:12px;height:150px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;animation:tl .4s cubic-bezier(.2,.8,.2,1) both;transition:transform .2s}.wt.cu{outline:2.5px solid var(--ac)}.wt:active{transform:scale(.96)}
+.wm{position:absolute;right:10px;bottom:62px;background:var(--sf);border-radius:20px;padding:8px;z-index:7;min-width:200px;box-shadow:0 8px 24px #0004;transform:scale(.6) translateY(20px);transform-origin:100% 100%;opacity:0;pointer-events:none;transition:transform .25s cubic-bezier(.3,1.3,.5,1),opacity .2s}.wm.on{transform:none;opacity:1;pointer-events:auto}.wm div{padding:12px 14px;border-radius:14px;cursor:pointer;font-size:15px}.wm div:active{background:var(--bg)}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}}.rise{animation:rise .4s cubic-bezier(.2,.8,.2,1)}.sq:focus-within{box-shadow:0 0 0 2px var(--ac)}.sq{transition:box-shadow .25s}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes gfade{from{opacity:0}}
+.gload{position:absolute;inset:0;background:var(--bg);z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;animation:gfade .25s}
+.gload .sp{width:40px;height:40px;border-radius:50%;border:3px solid var(--sf);border-top-color:#1a73e8;animation:spin .8s linear infinite}
+@property --bg{syntax:'<color>';inherits:true;initial-value:#fef7ff}@property --sf{syntax:'<color>';inherits:true;initial-value:#ece6f0}@property --tx{syntax:'<color>';inherits:true;initial-value:#1d1b20}@property --tx2{syntax:'<color>';inherits:true;initial-value:#49454f}@property --ac{syntax:'<color>';inherits:true;initial-value:#6750a4}@property --on{syntax:'<color>';inherits:true;initial-value:#ffffff}
+#phone{transition:--bg .45s,--sf .45s,--tx .45s,--tx2 .45s,--ac .45s,--on .45s}
+input[type=range]{-webkit-appearance:none;appearance:none;height:36px;background:transparent;margin:6px 0}
+input[type=range]::-webkit-slider-runnable-track{height:16px;border-radius:8px;background:linear-gradient(to right,var(--ac) var(--p,50%),var(--bg) var(--p,50%))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:6px;height:36px;border-radius:3px;background:var(--ac);margin-top:-10px;transition:transform .2s cubic-bezier(.3,1.5,.5,1),width .2s}
+input[type=range]:active::-webkit-slider-thumb{width:4px;transform:scaleY(1.2)}
+input[type=range]::-moz-range-track{height:16px;border-radius:8px;background:var(--bg)}input[type=range]::-moz-range-progress{height:16px;border-radius:8px;background:var(--ac)}input[type=range]::-moz-range-thumb{width:6px;height:36px;border:0;border-radius:3px;background:var(--ac)}
+.body.pgb{animation:pgout .3s cubic-bezier(.2,.8,.2,1)}@keyframes pgout{from{opacity:0;transform:translateX(-36px)}}
+.tile,.tile .ci{transition:background .3s,color .3s,transform .12s}.sw{transition:background .3s}.btn,.calc button,.pad button,.rb2{transition:transform .12s,background .2s}.btn:active,.calc button:active,.pad button:active,.rb2:active{transform:scale(.94)}
+.tabs{position:relative}.tabs button{position:relative;z-index:1;transition:color .25s}.tabs button.on{background:none;color:var(--on)}.tabs .ind{position:absolute;top:4px;bottom:4px;border-radius:16px;background:var(--ac);z-index:0;transition:left .38s cubic-bezier(.3,1.25,.5,1),width .38s cubic-bezier(.3,1.25,.5,1)}
+.pager{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 16px;scrollbar-width:none;margin:10px -16px 0;padding:0 16px;scroll-behavior:smooth}.pager::-webkit-scrollbar{display:none}.pager .grid{flex:0 0 100%;scroll-snap-align:start;margin-top:0;align-content:start}
+.dots i{cursor:pointer}
+#lock{z-index:60;display:flex;flex-direction:column;color:#fff;background:linear-gradient(#0003,#0009);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:transform .45s cubic-bezier(.2,.8,.2,1);cursor:pointer}#lock.off{transform:translateY(-100%)}
+</style></head>
+<body>
+<div id="phone" class="light">
+ <div id="wall" class="abs"></div>
+ <div id="status"><span id="st-time">9:41</span><span class="r"><svg id="i-air" viewBox="0 0 24 24" style="display:none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg><svg id="i-bt" viewBox="0 0 24 24"><path d="M17.7 7.7 12 2h-1v7.6L6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l4.6-4.6V22h1l5.7-5.7-4.3-4.3zM13 5.8l1.9 1.9L13 9.6zm1.9 10.5L13 18.2v-3.8z"/></svg><svg id="i-wifi" viewBox="0 0 24 24"><path d="M12 20 .9 8.6a16 16 0 0 1 22.2 0z"/></svg><svg viewBox="0 0 24 24"><path d="M2 20h20L22 4z"/></svg><span id="bat">100%</span><svg viewBox="0 0 24 24"><path d="M16 4h-2V2h-4v2H8a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1z"/></svg></span></div>
+ <div id="home" class="abs">
+  <div class="wid"><div class="t" id="h-time"></div><div class="d" id="h-date"></div><div class="w" style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM11 1h2v3h-2zm0 19h2v3h-2zM1 11h3v2H1zm19 0h3v2h-3z"/></svg>24°C · Clear skies</div><div class="w" style="margin-top:8px">Team sync at 2:00 PM</div></div>
+  <div class="pager" id="pg"><div class="grid" id="hg"></div><div class="grid" id="hg2"></div></div><div class="sp"></div>
+  <div class="dots" id="dots"><i class="on"></i><i></i></div><div class="search" id="hs"><svg viewBox="0 0 24 24" width="22" height="22" fill="#5f6368"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>Search apps<span style="flex:1"></span><svg viewBox="0 0 24 24" width="22" height="22" fill="#5f6368"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11z"/></svg></div>
+  <div class="dock" id="dock"></div>
+ </div>
+ <div id="drawer" class="abs"><input id="q" placeholder="Search apps"><div class="grid" id="dg"></div></div>
+ <div id="recents" class="abs"></div>
+ <div id="shade" class="abs">
+  <div style="display:flex;justify-content:space-between;align-items:end"><div><div style="font-size:42px;font-weight:300" id="s-time"></div><div style="color:var(--tx2)" id="s-date"></div></div><div style="color:var(--tx2);font-size:14px;text-align:right">100% · Fully charged</div></div>
+  <div class="qs" id="qs"></div><div class="act"><div class="pill"><span id="act"></span></div><button class="rb2" id="gear" aria-label="Settings"></button><button class="rb2 pw" id="lk" aria-label="Lock"></button></div>
+  <input type="range" id="br" min="20" max="100">
+  <div id="nts"></div>
+ </div>
+ <div id="nav"><button id="nb" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M17 4v16L5 12z"/></svg></button><button id="nh" aria-label="Home"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.5"/></svg></button><button id="nr" aria-label="Recents"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2.5"/></svg></button></div>
+ <div id="lock" class="abs"></div><div id="torch" class="abs"></div><div id="dim" class="abs"></div>
+ <div id="boot" class="abs">WebOS</div>
+</div>
+<script>
+const $=(s,e=document)=>e.querySelector(s),ph=$('#phone');
+let S={wifi:1,bt:0,dark:0,air:0,torch:0,sav:0,bright:100,wall:0};
+try{Object.assign(S,JSON.parse(localStorage.getItem('webos')||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem('webos',JSON.stringify(S))}catch(e){}};
+const walls=['linear-gradient(160deg,#3a1c71,#d76d77,#ffaf7b)','linear-gradient(160deg,#0f2027,#2c5364,#4ca1af)','linear-gradient(160deg,#134e5e,#71b280)','linear-gradient(160deg,#1a1a2e,#16213e,#533483)'];
+const store=(k,v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}};
+const pad2=n=>String(n).padStart(2,'0');
+const IC={
+phone:'<path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>',
+msg:'<path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM7 9h10v2H7zm0-3h10v2H7zm0 6h7v2H7z"/>',
+calc:'<path d="M19 2H5a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM8 18H6v-2h2zm0-4H6v-2h2zm4 4h-2v-2h2zm0-4h-2v-2h2zm4 4h-2v-2h2zm0-4h-2v-2h2zm2-5H6V5h12z"/>',
+clock:'<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>',
+notes:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zm2 16H8v-2h8zm0-4H8v-2h8zm-3-5V3.5L18.5 9z"/>',
+cal:'<path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V10h14zM7 12h5v5H7z"/>',
+gal:'<path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 13.5l2.5 3 3.5-4.5 4.5 6H5z"/>',
+set:'<path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zM10.5 2h3l.5 2.6 1.9.8 2.2-1.5 2.1 2.1-1.5 2.2.8 1.9 2.6.5v3l-2.6.5-.8 1.9 1.5 2.2-2.1 2.1-2.2-1.5-1.9.8-.5 2.6h-3l-.5-2.6-1.9-.8-2.2 1.5-2.1-2.1 1.5-2.2-.8-1.9L2 13.5v-3l2.6-.5.8-1.9-1.5-2.2 2.1-2.1 2.2 1.5 1.9-.8z"/>',
+wifi:'<path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.24 4.24 0 0 0-6 0zm-4-4l2 2a7.07 7.07 0 0 1 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/>',
+bt:'<path d="M17.7 7.7 12 2h-1v7.6L6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l4.6-4.6V22h1l5.7-5.7-4.3-4.3zM13 5.8l1.9 1.9L13 9.6zm1.9 10.5L13 18.2v-3.8z"/>',
+air:'<path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/>',
+dark:'<path d="M12 3a9 9 0 1 0 9 9c0-.5 0-.9-.1-1.4A5.5 5.5 0 0 1 13.4 3.1 9 9 0 0 0 12 3z"/>',
+torch:'<path d="M6 2h12v5l-2 3v12H8V10L6 7zm6 9a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/>',
+sav:'<path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.34C7 21.4 7.6 22 8.33 22h7.34c.73 0 1.33-.6 1.33-1.33V5.33C17 4.6 16.4 4 15.67 4zM13 18h-2v-2h2zm0-4h-2V8h2z"/>',
+sun:'<path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM11 1h2v3h-2zm0 19h2v3h-2zM1 11h3v2H1zm19 0h3v2h-3zM4.2 5.6l1.4-1.4 2.1 2.1-1.4 1.4zm12.1 12.1l1.4-1.4 2.1 2.1-1.4 1.4zM5.6 19.8l-1.4-1.4 2.1-2.1 1.4 1.4zM18.4 4.2l1.4 1.4-2.1 2.1-1.4-1.4z"/>',
+search:'<path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>',
+lock:'<path d="M18 8h-1V6a5 5 0 0 0-10 0v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zM9 6a3 3 0 0 1 6 0v2H9z"/>'};
+const svg=(k,s=24)=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="currentColor" fill-rule="evenodd">${IC[k]||''}</svg>`;
+/* ---------- apps ---------- */
+const hd=t=>`<div class="hd">${t}</div>`;
+const APPS={
+phone:{n:'Phone',i:'📞',c:'#34a853',r(el){let num='',call=0;const d=()=>{el.innerHTML=hd('Phone')+(call?`<div class="big" style="flex:1;padding-top:80px">${num||'Unknown'}<div style="font-size:16px;color:var(--tx2);margin-top:8px" id="ct">Calling…</div></div><div style="text-align:center;padding:30px"><button class="btn" style="background:#d93025;color:#fff" id="end">End call</button></div>`:`<div class="big" style="min-height:90px;font-size:34px">${num}</div><div class="pad">${[1,2,3,4,5,6,7,8,9,'*',0,'#'].map(k=>`<button data-k="${k}">${k}</button>`).join('')}</div><div style="display:flex;justify-content:center;gap:20px;padding:18px"><button class="btn" style="background:#34a853;color:#fff;border-radius:30px;width:120px" id="cl">Call</button><button class="btn" style="background:var(--sf);color:var(--tx)" id="bk">${svg('bs',22)}</button></div>`);
+el.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{if(num.length<14){num+=b.dataset.k;d()}});
+const e=$('#end',el);if(e)e.onclick=()=>{call=0;d()};
+const c=$('#cl',el);if(c)c.onclick=()=>{if(num){call=1;d();let s=0;const t=setInterval(()=>{const x=$('#ct',el);if(!call||!x)return clearInterval(t);s++;x.textContent=(s>2?`${pad2(Math.floor((s-2)/60))}:${pad2((s-2)%60)}`:'Calling…')},1000)}};
+const b=$('#bk',el);if(b)b.onclick=()=>{num=num.slice(0,-1);d()}};d()}},
+msg:{n:'Messages',i:'💬',c:'#1a73e8',r(el){const rep=['Sounds good!','Haha, nice.','Let me check and get back to you.','Can you tell me more?','On my way!','Perfect, see you then.'];let ms=[{m:0,t:'Hey! Welcome to WebOS. Say hi!'}];
+el.innerHTML=hd('Alex')+'<div class="msgs"></div><div class="compose"><input placeholder="Text message"><button class="btn" style="border-radius:23px">Send</button></div>';
+const L=$('.msgs',el),inp=$('input',el);const d=()=>{L.innerHTML=ms.map(x=>`<div class="m ${x.m?'me':'you'}"></div>`).join('');[...L.children].forEach((c,i)=>c.textContent=ms[i].t);L.scrollTop=1e9};
+const send=()=>{const v=inp.value.trim();if(!v)return;ms.push({m:1,t:v});inp.value='';d();setTimeout(()=>{ms.push({m:0,t:rep[Math.random()*rep.length|0]});d();notify('Alex','New message')},1000)};
+$('button',el).onclick=send;inp.onkeydown=e=>{if(e.key==='Enter')send()};d()}},
+calc:{n:'Calculator',i:'🧮',c:'#5f6368',r(el){let ex='',res='';
+const keys=['C','⌫','%','÷',7,8,9,'×',4,5,6,'−',1,2,3,'+',0,'.','=','='].slice(0,19);
+el.innerHTML=`<div class="scr"><div class="e"></div><div class="r">0</div></div><div class="calc">${['C','⌫','%','÷',7,8,9,'×',4,5,6,'−',1,2,3,'+','0','.','=' ].map(k=>`<button class="${'÷×−+'.includes(k)?'op':k==='='?'eq':''}" ${k==='0'?'style="grid-column:span 2"':''}>${k}</button>`).join('')}</div>`;
+const ev=()=>{try{const s=ex.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/%/g,'/100');if(!/^[0-9+\-*/.() ]+$/.test(s))return'';const v=Function('"use strict";return('+s+')')();return Number.isFinite(v)?String(+v.toFixed(8)):'Error'}catch(e){return''}};
+const draw=()=>{$('.e',el).textContent=ex;$('.r',el).textContent=res||ex||'0'};
+el.querySelectorAll('.calc button').forEach(b=>b.onclick=()=>{const k=b.textContent;if(k==='C'){ex='';res=''}else if(k==='⌫'){ex=ex.slice(0,-1);res=''}else if(k==='='){const v=ev();if(v){ex=v==='Error'?'':v;res=v==='Error'?'Error':''}}else{if(res&&!'+−×÷'.includes(k))ex='';ex+=k;res=''}draw()});draw()}},
+clock:{n:'Clock',i:'⏰',c:'#ea4335',r(el,inst){let tab=0,t0=0,el0=0,run=0,laps=[];
+const d=()=>{el.innerHTML=hd('Clock')+`<div class="tabs"><button class="${tab?'':'on'}">Clock</button><button class="${tab?'on':''}">Stopwatch</button></div><div class="body" id="cb"></div>`;const T=el.querySelectorAll('.tabs button');T[0].onclick=()=>{tab=0;d()};T[1].onclick=()=>{tab=1;d()};f()};
+const fmt=ms=>`${pad2(Math.floor(ms/60000))}:${pad2(Math.floor(ms/1000)%60)}.${pad2(Math.floor(ms/10)%100)}`;
+const f=()=>{const b=$('#cb',el);if(!b)return;if(!tab){b.innerHTML=`<svg viewBox="-100 -100 200 200" style="width:240px;display:block;margin:10px auto"><path d="${cookie()}" fill="var(--sf)"/>${[...Array(12)].map((_,i)=>`<line y1="-84" y2="-78" stroke="var(--tx2)" stroke-width="2" transform="rotate(${i*30})"/>`).join('')}<line id="hh" y2="-48" stroke="var(--tx)" stroke-width="5" stroke-linecap="round"/><line id="mh" y2="-72" stroke="var(--tx)" stroke-width="3.5" stroke-linecap="round"/><line id="sh" y2="-80" stroke="var(--ac)" stroke-width="2" stroke-linecap="round"/><circle r="5" fill="var(--ac)"/></svg><div class="big" id="dg2" style="font-size:32px"></div><div style="text-align:center;color:var(--tx2)">${Intl.DateTimeFormat().resolvedOptions().timeZone}</div>`}
+else{b.innerHTML=`<div class="big" id="sw">${fmt(el0+(run?Date.now()-t0:0))}</div><div style="display:flex;gap:10px;justify-content:center;margin-bottom:14px"><button class="btn" id="a">${run?'Pause':'Start'}</button><button class="btn" id="l" style="background:var(--sf);color:var(--tx)">${run?'Lap':'Reset'}</button></div>${laps.map((x,i)=>`<div class="row"><span>Lap ${laps.length-i}</span><span>${x}</span></div>`).join('')}`;
+$('#a',b).onclick=()=>{if(run){el0+=Date.now()-t0;run=0}else{t0=Date.now();run=1}f()};$('#l',b).onclick=()=>{if(run)laps.unshift(fmt(el0+Date.now()-t0));else{el0=0;laps=[]}f()}}};
+d();const tk=setInterval(()=>{if(!el.isConnected)return clearInterval(tk);const n=new Date();if(!tab){const h=$('#hh',el);if(h){h.setAttribute('transform',`rotate(${(n.getHours()%12+n.getMinutes()/60)*30})`);$('#mh',el).setAttribute('transform',`rotate(${n.getMinutes()*6})`);$('#sh',el).setAttribute('transform',`rotate(${n.getSeconds()*6})`);$('#dg2',el).textContent=n.toLocaleTimeString()}}else if(run){const s=$('#sw',el);if(s)s.textContent=fmt(el0+Date.now()-t0)}},50)}},
+notes:{n:'Notes',i:'📝',c:'#fbbc04',r(el,inst){let ns=store('notes')||[{id:1,t:'Welcome to Notes',d:'Tap + to write a new note. Notes are saved on this device.'}],ed=null;
+const d=()=>{if(ed===null){el.innerHTML=hd('Notes')+'<div class="body"></div><button class="fab">+</button>';const B=$('.body',el);ns.forEach(n=>{const x=document.createElement('div');x.className='note';x.innerHTML='<b></b><span></span>';x.firstChild.textContent=n.t||'Untitled';x.lastChild.textContent=(n.d||'').slice(0,80);x.onclick=()=>{ed=n;d()};B.append(x)});if(!ns.length)B.innerHTML='<p style="text-align:center;color:var(--tx2);margin-top:60px">No notes yet. Tap + to add one.</p>';$('.fab',el).onclick=()=>{const n={id:Date.now(),t:'',d:''};ns.unshift(n);ed=n;d()}}
+else{el.innerHTML=`<div class="hd"><span>Edit note</span><button class="btn" style="background:#d93025;color:#fff;padding:8px 16px">Delete</button></div><div class="body" style="display:flex;flex-direction:column"><input style="background:none;border:0;color:var(--tx);font-size:22px;outline:none;padding:8px 0;user-select:text" placeholder="Title"><textarea placeholder="Write something…"></textarea></div>`;const i=$('input',el),t=$('textarea',el);i.value=ed.t;t.value=ed.d;i.oninput=t.oninput=()=>{ed.t=i.value;ed.d=t.value;store('notes',ns)};$('.btn',el).onclick=()=>{ns=ns.filter(n=>n!==ed);store('notes',ns);ed=null;d()}}};
+inst.back=()=>{if(ed!==null){if(!ed.t&&!ed.d)ns=ns.filter(n=>n!==ed);store('notes',ns);ed=null;d();return 1}};d()}},
+cal:{n:'Calendar',i:'📅',c:'#4285f4',r(el){let o=new Date();o.setDate(1);const d=()=>{const y=o.getFullYear(),m=o.getMonth(),f=o.getDay(),n=new Date(y,m+1,0).getDate(),t=new Date();
+el.innerHTML=`<div class="hd"><button class="btn" style="background:var(--sf);color:var(--tx)" id="p">‹</button><span>${o.toLocaleString('en',{month:'long',year:'numeric'})}</span><button class="btn" style="background:var(--sf);color:var(--tx)" id="n">›</button></div><div class="body"><div class="cal">${'SMTWTFS'.split('').map(x=>`<span class="h">${x}</span>`).join('')}${'<span></span>'.repeat(f)}${[...Array(n)].map((_,i)=>`<span class="${t.getFullYear()==y&&t.getMonth()==m&&t.getDate()==i+1?'td':''}">${i+1}</span>`).join('')}</div></div>`;
+$('#p',el).onclick=()=>{o.setMonth(m-1);d()};$('#n',el).onclick=()=>{o.setMonth(m+1);d()}};d()}},
+gal:{n:'Gallery',i:'🖼️',c:'#e91e63',r(el,inst){const P=[...Array(24)].map((_,i)=>`linear-gradient(${i*37%360}deg,hsl(${i*47%360} 70% 55%),hsl(${(i*47+70)%360} 75% 40%))`);let v=null;
+const d=()=>{if(v===null){el.innerHTML=hd('Photos')+'<div class="body"><div class="g3"></div></div>';P.forEach((p,i)=>{const x=document.createElement('div');x.style.background=p;x.onclick=()=>{v=i;d()};$('.g3',el).append(x)})}else{el.innerHTML=`<div style="flex:1;background:${P[v]};display:flex;align-items:end;justify-content:center;padding:20px"><div style="display:flex;gap:10px"><button class="btn" id="a">‹ Prev</button><button class="btn" id="b">Next ›</button></div></div>`;$('#a',el).onclick=()=>{v=(v+23)%24;d()};$('#b',el).onclick=()=>{v=(v+1)%24;d()}}};
+inst.back=()=>{if(v!==null){v=null;d();return 1}};d()}},
+set:{n:'Settings',i:'⚙️',c:'#607d8b',r(el){const T=[['wifi','Wi-Fi'],['bt','Bluetooth'],['air','Airplane mode'],['dark','Dark theme'],['sav','Battery saver']];
+const d=()=>{el.innerHTML=hd('Settings')+`<div class="body">${T.map(([k,l])=>`<div class="row"><span style="display:flex;gap:14px;align-items:center">${svg(k,22)}${l}</span><button class="sw ${S[k]?'on':''}" data-k="${k}"></button></div>`).join('')}<div class="row" style="display:block"><div style="display:flex;gap:14px;align-items:center">${svg('sun',22)}Brightness</div><input type="range" min="20" max="100" value="${S.bright}" id="b"></div><div class="row" style="display:block"><div style="margin-bottom:10px">Wallpaper</div><div style="display:flex;gap:10px">${walls.map((w,i)=>`<div data-w="${i}" style="flex:1;height:64px;border-radius:14px;background:${w};cursor:pointer;outline:${S.wall==i?'3px solid var(--ac)':'0'}"></div>`).join('')}</div></div><div class="row"><span>About phone</span><span style="color:var(--tx2)">WebOS 1.0</span></div><div class="row"><span>Reset to defaults</span><button class="btn" id="rs">Reset</button></div></div>`;
+el.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{set(b.dataset.k,+!S[b.dataset.k])});el.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{S.wall=+b.dataset.w;apply()});$('#b',el).oninput=e=>{S.bright=+e.target.value;apply(1)};$('#rs',el).onclick=()=>{S={wifi:1,bt:0,dark:0,air:0,torch:0,sav:0,bright:100,wall:0};apply()};el.refresh=d};d()}}
+};
+Object.assign(IC,{cloud:'<path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.99 5.99 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/>',rain:'<g transform="translate(0 -3) scale(.9)"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.99 5.99 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></g><path d="M7 19l-1 3h1.5l1-3zm5 0l-1 3h1.5l1-3zm5 0l-1 3h1.5l1-3z"/>',music:'<path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z"/>',play:'<path d="M8 5v14l11-7z"/>',pause:'<path d="M6 19h4V5H6zm8-14v14h4V5z"/>',prev:'<path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>',next:'<path d="M6 18l8.5-6L6 6zM16 6v12h2V6z"/>',x:'<path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>',bs:'<path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12z"/>'});
+const fmtT=s=>Math.floor(s/60)+':'+pad2(s%60);
+Object.assign(APPS,{
+weather:{n:'Weather',c:'#1e88e5',r(el){const H=['sun','sun','cloud','cloud','rain','sun'],D=[['Sat','sun',26,15],['Sun','cloud',22,14],['Mon','rain',19,12],['Tue','cloud',21,13],['Wed','sun',25,15]],col=k=>k=='sun'?'#f9ab00':'var(--tx2)';
+el.innerHTML=hd('Weather')+`<div class="body"><div style="text-align:center;padding:10px 0 18px"><div style="color:var(--tx2)">Your location</div><div style="display:flex;justify-content:center;color:#f9ab00;margin:8px 0">${svg('sun',96)}</div><div style="font-size:64px;font-weight:300">24°</div><div style="color:var(--tx2)">Clear · H 26° L 15°</div></div><div class="row" style="gap:14px;overflow:auto">${H.map((k,j)=>`<div style="text-align:center;font-size:13px"><div>${(new Date().getHours()+j)%24}:00</div><div style="margin:6px 0;color:${col(k)}">${svg(k,26)}</div>${24-j}°</div>`).join('')}</div>${D.map(([d,k,h,l])=>`<div class="row"><span style="width:50px">${d}</span><span style="color:${col(k)}">${svg(k,24)}</span><span>${h}° <span style="color:var(--tx2)">${l}°</span></span></div>`).join('')}</div>`}},
+music:{n:'Music',c:'#8e24aa',r(el){const L=[['Neon Skyline','Nova Drive',204],['Paper Boats','Lumen',187],['Slow Orbit','Hollow Pines',231],['Afterglow','Kite & Co',176]];let i=0,t=0,p=0;
+const d=()=>{const [n,a,D]=L[i];el.innerHTML=hd('Now playing')+`<div class="body" style="text-align:center"><div style="width:230px;height:230px;margin:10px auto 22px;border-radius:32px;background:linear-gradient(${i*70}deg,hsl(${i*80+270} 70% 55%),hsl(${i*80+330} 80% 35%));box-shadow:0 12px 30px #0005;display:grid;place-items:center;color:#fff">${svg('music',90)}</div><div style="font-size:22px">${n}</div><div style="color:var(--tx2);margin-bottom:18px">${a}</div><input type="range" id="pr" min="0" max="${D}" value="${t}"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2)"><span id="c1">${fmtT(t)}</span><span>${fmtT(D)}</span></div><div style="display:flex;justify-content:center;align-items:center;gap:22px;margin-top:16px"><button class="btn rb" id="pv">${svg('prev',28)}</button><button class="btn rb" id="pp" style="width:72px;height:72px;border-radius:26px">${svg(p?'pause':'play',34)}</button><button class="btn rb" id="nx">${svg('next',28)}</button></div></div>`;
+$('#pp',el).onclick=()=>{p=!p;melody(p);d()};$('#nx',el).onclick=()=>{i=(i+1)%4;t=0;d()};$('#pv',el).onclick=()=>{i=(i+3)%4;t=0;d()};$('#pr',el).oninput=e=>{t=+e.target.value;$('#c1',el).textContent=fmtT(t)}};
+d();const tk=setInterval(()=>{if(!el.isConnected)return clearInterval(tk);if(p){t++;if(t>=L[i][2]){i=(i+1)%4;t=0;d()}else{const r=$('#pr',el);if(r){r.value=t;$('#c1',el).textContent=fmtT(t)}}}},1000)}}
+});
+Object.assign(IC,{vol:'<path d="M3 9v6h4l5 5V4L7 9zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>',disk:'<path d="M2 20h20v-4H2zm2-3h2v2H4zM2 4v8h20V4zm4 6H4V6h2z"/>',pal:'<path d="M12 3a9 9 0 0 0 0 18 1.5 1.5 0 0 0 1.1-2.5c-.2-.3-.4-.6-.4-1a1.5 1.5 0 0 1 1.5-1.5H16a5 5 0 0 0 5-5c0-3.9-4-7-9-7zM6.5 12a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>',info:'<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2zm0-8h-2V7h2z"/>',chk:'<path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/>'});
+const DEF={wifi:1,bt:0,dark:0,air:0,torch:0,sav:0,bright:100,wall:0,data:1,hot:0,auto:1,aod:0,dnd:0,vib:1,vol:60,ring:80,alm:70,to:0,acc:0};
+S=Object.assign({},DEF,S);
+const ACC=[['#6750a4','#d0bcff'],['#1a73e8','#a8c7fa'],['#1e8e3e','#81c995'],['#c5221f','#f28b82']];
+const toast=m=>{const t=document.createElement('div');t.className='toast';t.textContent=m;ph.append(t);setTimeout(()=>t.remove(),2300)};
+let idle;const rst=()=>{clearTimeout(idle);if(S.to)idle=setTimeout(()=>lockTo(1),S.to*1000)};
+document.addEventListener('pointerdown',e=>{const it=e.target.closest('.it');window.__o=null;if(it){const r=it.getBoundingClientRect(),p=ph.getBoundingClientRect();window.__o=(r.left-p.left+r.width/2)+'px '+(r.top-p.top+r.height/2)+'px'}const b=e.target.closest('.btn,.tile,.note,.nt,.row,.gi,#nav button');if(b){const r=b.getBoundingClientRect(),s=Math.max(r.width,r.height)*2.2,x=document.createElement('span');x.className='rip';x.style.cssText=`width:${s}px;height:${s}px;left:${e.clientX-r.left-s/2}px;top:${e.clientY-r.top-s/2}px`;b.append(x);setTimeout(()=>x.remove(),520)}rst()});
+Object.assign(APPS,{set:{n:'Settings',c:'#607d8b',r(el,inst){let pg='main',an=0,bn=0,SA2='';
+const ttl={main:'Settings',net:'Network & internet',bt:'Bluetooth',display:'Display',sound:'Sound',battery:'Battery',storage:'Storage',style:'Wallpaper & style',wb:'Digital Wellbeing',apps:'Apps',appi:'App info',notif:'Notifications',access:'Accessibility',safe:'Safety & emergency',goo:'Google',sys:'System',sec:'Security & privacy',loc:'Location',pk:'Passwords & passkeys',acc:'Accounts and backup',par:'Parental controls',about:'About phone'};
+const sw=(k,l,sub)=>`<div class="row"><span><div>${l}</div>${sub?`<small style="color:var(--tx2)">${sub}</small>`:''}</span><button class="sw ${S[k]?'on':''}" data-k="${k}"></button></div>`;
+const sl=(k,l,min=0)=>`<div class="row" style="display:block"><div style="margin-bottom:4px">${l}</div><input type="range" min="${min}" max="100" value="${S[k]}" data-s="${k}"></div>`;
+const lst=a=>a.map(n=>`<div class="row"><span>${n[0]}<br><small style="color:var(--tx2)">${n[1]}</small></span>${n[2]?svg('lock',18):''}</div>`).join('');
+const M0=[['net','Network & internet',()=>S.wifi?'HomeNet_5G':'Wi-Fi off','wifi'],['bt','Bluetooth',()=>S.bt?'2 connected':'Off','bt'],['display','Display',()=>S.dark?'Dark theme':'Light theme','sun'],['sound','Sound',()=>'Media volume '+S.vol+'%','vol'],['battery','Battery',()=>'87%'+(S.sav?' \u00b7 Saver on':''),'sav'],['storage','Storage',()=>'33.3 GB of 128 GB used','disk'],['style','Wallpaper & style',()=>'Accent color and wallpaper','pal'],['wb','Digital Wellbeing',()=>'Screen time 2h 30m','info'],['about','About phone',()=>'WebOS Phone','info']];
+const TN=[['#a8eeff','#004d5c'],['#ffe08a','#5c4300'],['#b6f0b6','#0b3d0b'],['#e3e3e3','#444']];
+const G=[[['net','Network & internet',()=>S.wifi?'HomeNet_5G':'Wi-Fi off','wifi',0],['bt','Connected devices',()=>S.bt?'Bluetooth on':'Bluetooth, pairing','bt',0],['apps','Apps',()=>'Recent apps, default apps','set',0],['notif','Notifications',()=>'Notification history, conversations','msg',0],['display','Display',()=>S.dark?'Dark theme, brightness':'Brightness, dark theme','sun',0],['sound','Sound & vibration',()=>'Volume, do not disturb','vol',0],['style','Wallpaper & style',()=>'Wallpapers, accent colors','pal',0],['access','Accessibility',()=>'Display size, text, interaction controls','acc2',0]],
+[['storage','Storage',()=>'26% used - 94.7 GB free','disk',1],['battery','Battery',()=>'100%'+(S.sav?' - Saver on':' - Fully charged'),'sav',2],['sys','System',()=>'Languages, gestures, time','set',3],['about','About phone',()=>'WebOS Phone','pinfo',3]],
+[['sec','Security & privacy',()=>'App security, device lock, permissions','shield',0],['loc','Location',()=>S.loc?'On / 14 apps have access to location':'Off','pin',0],['safe','Safety & emergency',()=>'Emergency SOS, medical info, alerts','shield',0],['pk','Passwords & passkeys',()=>'Suggestions for sign-in & autofill','key',0],['acc','Accounts and backup',()=>'Back up data, copy data from another device','sync',0],['wb','Digital Wellbeing',()=>'Screen time, app timers, bedtime schedules','heart',0],['par','Parental controls',()=>'Digital ground rules & screen time limits','person',0],['goo','Google',()=>'Services & preferences','search',0]]];
+const NM=()=>`<div class="sq">${svg('search',24)}<input id="ss" placeholder="Search Settings"></div>`+G.map(g=>`<div class="grp">${g.map(([id,n,s,ic,t])=>`<div class="gi" data-p="${id}"><span class="ic2" style="background:${TN[t][0]};color:${TN[t][1]}">${svg(ic,26)}</span><span><div style="font-size:17px">${n}</div><div style="font-size:14px;color:var(--tx2);margin-top:2px">${s()}</div></span></div>`).join('')}</div>`).join('');
+const P={
+main:NM,
+main0:()=>M0.map(([id,n,s,ic])=>`<div class="row" data-p="${id}" style="cursor:pointer;gap:16px"><span class="ic" style="width:40px;height:40px;border-radius:50%;background:var(--ac);color:var(--on);flex:none;box-shadow:none">${svg(ic,20)}</span><span style="flex:1"><div>${n}</div><small style="color:var(--tx2)">${s()}</small></span></div>`).join(''),
+net:()=>sw('wifi','Wi-Fi',S.wifi?'Connected to HomeNet_5G':'Off')+sw('air','Airplane mode')+sw('data','Mobile data','5G \u00b7 4 GB used')+sw('hot','Hotspot',S.hot?'Sharing connection':'Off')+(S.wifi?'<div class="sec">Available networks</div>'+lst([['HomeNet_5G','Connected',1],['Cafe_Guest','Open',0],['Studio-2.4','Secured',1]]):''),
+bt:()=>sw('bt','Bluetooth',S.bt?'Visible as WebOS Phone':'Off')+(S.bt?'<div class="sec">Paired devices</div>'+lst([['Buds Pro','Connected, 80%'],['Car Audio','Not connected'],['Smart Watch','Connected']]):''),
+display:()=>sl('bright','Brightness',20)+sw('dark','Dark theme','Easier on the eyes at night')+sw('auto','Adaptive brightness')+sw('aod','Always-on display')+`<div class="sec">Screen timeout</div><div class="tabs" style="margin:0 0 10px">${[[15,'15s'],[30,'30s'],[60,'1 min'],[0,'Never']].map(([v,l])=>`<button data-t="${v}" class="${S.to==v?'on':''}">${l}</button>`).join('')}</div>`,
+sound:()=>sl('vol','Media volume')+sl('ring','Ring volume')+sl('alm','Alarm volume')+sw('dnd','Do not disturb','Silence notifications')+sw('vib','Vibrate for calls'),
+battery:()=>`<div style="text-align:center;padding:10px 0 20px"><div style="font-size:56px;font-weight:300">100%</div><div style="color:var(--tx2)">${S.sav?'About 24 hr left':'Fully charged'}</div><div style="height:12px;border-radius:6px;background:var(--sf);margin:16px 20px 0;overflow:hidden"><div style="width:100%;height:100%;background:var(--ac)"></div></div></div>`+sw('sav','Battery saver','Limits background activity')+'<div class="sec">App usage</div>'+[['Screen',38],['Music',22],['Messages',14],['Weather',6]].map(([n,v])=>`<div class="row" style="display:block"><div style="display:flex;justify-content:space-between"><span>${n}</span><span>${v}%</span></div><div style="height:6px;border-radius:3px;background:var(--bg);margin-top:8px"><div style="width:${v*2}%;height:100%;border-radius:3px;background:var(--ac)"></div></div></div>`).join(''),
+storage:()=>{const U=[['Apps',12.4,'#1a73e8'],['Photos',8.1,'#e91e63'],['Audio',3.2,'#fbbc04'],['System',9.6,'#607d8b']];return `<div style="text-align:center;padding:10px 0"><div style="font-size:40px;font-weight:300">33.3 GB</div><div style="color:var(--tx2)">used of 128 GB</div></div><div style="display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--sf);margin-bottom:16px">${U.map(u=>`<div style="width:${u[1]/1.28}%;background:${u[2]}"></div>`).join('')}</div>`+U.map(u=>`<div class="row"><span style="display:flex;gap:12px;align-items:center"><i style="width:12px;height:12px;border-radius:50%;background:${u[2]}"></i>${u[0]}</span><span>${u[1]} GB</span></div>`).join('')},
+style:()=>`<div class="sec">Wallpaper</div><div style="display:flex;gap:10px;margin-bottom:10px">${walls.map((w,i)=>`<div data-w="${i}" style="flex:1;height:84px;border-radius:16px;background:${w};cursor:pointer;outline:${S.wall==i?'3px solid var(--ac)':'0'};outline-offset:2px"></div>`).join('')}</div><div class="sec">Accent color</div><div style="display:flex;gap:14px;padding:6px 4px 14px">${ACC.map((a,i)=>`<div data-a="${i}" style="width:44px;height:44px;border-radius:50%;background:${a[0]};cursor:pointer;display:grid;place-items:center;color:#fff">${S.acc==i?svg('chk',22):''}</div>`).join('')}</div>`+sw('dark','Dark theme'),
+wb:()=>`<div style="padding:12px 6px 18px"><div style="color:var(--tx2)">Screen time</div><div style="font-size:46px;font-weight:300">2h 30m</div></div>`+[['~1h','Messages',92,'var(--tx)','var(--bg)'],['45m','Music',72,'var(--tx2)','var(--bg)'],['30m','Notes',56,'var(--sf)','var(--tx)']].map(([t,n,d,b,f])=>`<div style="display:flex;align-items:center;gap:16px;margin:10px 6px"><span style="width:${d}px;height:${d}px;border-radius:50%;background:${b};color:${f};display:grid;place-items:center;font-size:15px;flex:none">${t}</span><span style="font-size:17px">${n}</span></div>`).join(''),
+apps:()=>lst([['Recently opened','Messages, Music, Weather'],['Default apps','Browser, Phone, SMS'],['Special app access','Battery, display over other apps']])+'<div class="sec">All apps</div>'+Object.entries(APPS).map(([k,a])=>`<div class="row" data-p="appi" data-a="${k}" style="cursor:pointer"><span style="display:flex;gap:14px;align-items:center"><span class="ic" style="width:36px;height:36px;border-radius:12px;background:${a.c};box-shadow:none">${svg(a.i,20)}</span>${a.n}</span></div>`).join(''),
+appi:()=>{const a=APPS[SA2];if(!a)return '';const pm=PM[SA2],x=SA2.startsWith('x_');return `<div style="text-align:center;padding:10px 0 20px"><span class="ic" style="width:72px;height:72px;border-radius:24px;background:${a.c};margin:0 auto 12px">${svg(a.i,36)}</span><div style="font-size:22px">${a.n}</div><div style="color:var(--tx2);font-size:13px">${x?'Installed from Play Store':'System app'}</div></div><div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn" data-fs style="flex:1;background:var(--sf);color:var(--tx)">Force stop</button>${x?'<button class="btn" data-un style="flex:1;background:#d93025;color:#fff">Uninstall</button>':'<button class="btn" disabled style="flex:1;opacity:.4;background:var(--sf);color:var(--tx)">Uninstall</button>'}</div><div class="sec">Permissions</div>`+(pm?`<div class="row"><span>${pm[0]}<br><small style="color:var(--tx2)">${PG[SA2]?'Allowed':'Not allowed'}</small></span>${PG[SA2]?'<button class="btn" data-rp style="padding:8px 16px">Revoke</button>':''}</div>`:'<div class="row"><span>No permissions requested</span></div>')+`<div class="sec">Process</div><div class="row"><span>Status</span><span style="color:var(--tx2)">${stack.some(s=>s.id==SA2)?'Running in background':'Not running'}</span></div>`},
+notif:()=>sw('dnd','Do not disturb','Silence calls and alerts')+sw('nh','Notification history','Show recent and snoozed')+sw('lockn','Notifications on lock screen','Show conversations')+sw('hu2','Heads-up notifications','Show alerts at the top')+sw('bub','Bubbles','Float chats over other apps')+lst([['Conversations','No priority conversations'],['Recently sent','Messages, Phone']]),
+access:()=>sw('gray','Grayscale','Show the screen in black and white')+sw('bold','Bold text')+sw('mag','Magnification')+sw('cap','Live Caption','Automatic captions for media')+lst([['Display size and text','Default'],['TalkBack','Off'],['Hearing devices','None connected']]),
+safe:()=>lst([['Emergency SOS','Press power button 5 times'],['Medical information','Not set up'],['Emergency contacts','None added'],['Wireless emergency alerts','Enabled'],['Car crash detection','On']]),
+goo:()=>lst([['Account','Sign in via accounts.google.com'],['Autofill','WebOS Passwords'],['Devices & sharing','Quick Share'],['Find Hub','On'],['Set up & restore','Backup and transfer']]),
+sys:()=>lst([['Languages','English (United States)'],['Gestures','Three-button navigation'],['Date & time','Set automatically']])+sw('h24','Use 24-hour format')+sw('upd','Auto-update system','Install updates overnight')+lst([['System update','Up to date \u00b7 Nov 5, 2026']]),
+sec:()=>sw('fmd','Find My Device','Locate, ring or erase this phone')+sw('scan','Scan apps for threats')+lst([['Screen lock','Swipe'],['App permissions','14 apps have access'],['Security update','November 5, 2026']]),
+loc:()=>sw('loc','Use location',S.loc?'On':'Off')+(S.loc?'<div class="sec">Recent access</div>'+lst([['Weather','2 min ago'],['Messages','1 hr ago'],['Calendar','3 hr ago']]):''),
+pk:()=>sw('af','Autofill service','WebOS Passwords')+lst([['Passwords','12 saved'],['Passkeys','3 saved']]),
+acc:()=>sw('bk','Backup','Last backup: today, 3:10 AM')+lst([['Account','Sign in via accounts.google.com'],['Copy data from another device','Transfer apps, photos and more']]),
+par:()=>lst([['Set up parental controls','Manage screen time and content limits']])+sw('par','Supervision','Off until a child account is linked'),
+about:()=>[['Device name','WebOS Phone'],['Model','WP-1 Pro'],['WebOS version','15'],['Processor','Octa-core 3.0 GHz'],['RAM','8 GB'],['Security patch','November 5, 2026'],['Build number','WOS15.241120']].map(([a,b])=>`<div class="row"${a=='Build number'?' data-b="1" style="cursor:pointer"':''}><span>${a}</span><span style="color:var(--tx2)">${b}</span></div>`).join('')+'<div class="row"><span>Reset to defaults</span><button class="btn" data-r="1">Reset</button></div>'};
+const draw=()=>{el.classList.add('sapp');el.innerHTML=(pg=='main'?'<div style="height:6px"></div>':hd(ttl[pg]))+`<div class="body ${an==2?'pgb':an?'pg':''}">${P[pg]()}</div>`;an=0;
+el.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{pg=b.dataset.p;if(b.dataset.a)SA2=b.dataset.a;an=1;draw()});
+el.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{const k=b.dataset.k,v=+!S[k];b.classList.toggle('on',!!v);setTimeout(()=>set(k,v),240)});
+el.querySelectorAll('[data-s]').forEach(b=>b.oninput=e=>{S[b.dataset.s]=+e.target.value;apply(1)});
+el.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{S.wall=+b.dataset.w;apply()});
+el.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{S.acc=+b.dataset.a;apply()});
+el.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{S.to=+b.dataset.t;save();rst();setTimeout(apply,300)});
+el.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>{bn++;if(bn==7)toast('You are now a developer!');else if(bn>3)toast((7-bn)+' taps away from being a developer')});
+el.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{S=Object.assign({},DEF);apply();toast('Settings reset')});el.querySelectorAll('[data-fs]').forEach(b=>b.onclick=()=>{const s=stack.find(x=>x.id==SA2);if(s)kill(s);toast('App stopped');draw()});el.querySelectorAll('[data-un]').forEach(b=>b.onclick=()=>{uninstall(SA2);pg='apps';an=1;draw()});el.querySelectorAll('[data-rp]').forEach(b=>b.onclick=()=>{delete PG[SA2];delete OK[SA2];store('perm',PG);toast('Permission revoked');draw()});const ss=$('#ss',el);if(ss)ss.oninput=()=>{const q=ss.value.toLowerCase();el.querySelectorAll('.gi').forEach(g=>g.style.display=g.textContent.toLowerCase().includes(q)?'':'none');el.querySelectorAll('.grp').forEach(g=>g.style.display=[...g.children].some(c=>c.style.display!='none')?'':'none')}};
+el.refresh=draw;inst.back=()=>{if(pg!='main'){pg=pg=='appi'?'apps':'main';an=2;draw();return 1}};draw()}}});
+APPS.play={n:'Play Store',c:'linear-gradient(135deg,#00c853,#2962ff)',i:'play',r(){}};APPS.web={n:'Browser',c:'linear-gradient(135deg,#4285f4,#34a853)',i:'web',r(){}};
+for(const k in APPS)APPS[k].i=k;
+const ORDER=['calc','clock','notes','cal','weather','music','phone','msg','gal','set','play','web'],DOCK=['phone','msg','web','set'];
+/* ---------- shell ---------- */
+let stack=[];
+const mk=(id,big)=>{const a=APPS[id];const b=document.createElement('button');b.className='it';b.innerHTML=`<div class="ic" style="background:${a.c}">${svg(a.i,30)}</div>${a.n}`;b.onclick=()=>open(id);return b};
+const hg=$('#hg'),dock=$('#dock'),dg=$('#dg');
+['calc','clock','notes','cal','weather','music','gal','play'].forEach(i=>hg.append(mk(i)));DOCK.forEach(i=>dock.append(mk(i)));
+const fillDrawer=q=>{dg.innerHTML='';ORDER.filter(i=>APPS[i].n.toLowerCase().includes(q.toLowerCase())).sort((a,b)=>APPS[a].n.localeCompare(APPS[b].n)).forEach(i=>dg.append(mk(i)))};fillDrawer('');
+$('#q').oninput=e=>fillDrawer(e.target.value);
+$('#hs').onclick=()=>{toggle('drawer',1);$('#q').focus()};
+const cur=()=>stack.find(s=>s.el.classList.contains('show'));
+function ui(){const open=$('#drawer').classList.contains('open')||$('#recents').classList.contains('open')&&0;ph.classList.toggle('light',!cur()&&!$('#drawer').classList.contains('open')||$('#recents').classList.contains('open')&&false||$('#shade').classList.contains('open')&&false)}
+function toggle(id,on){$('#'+id).classList.toggle('open',on);if(id==='shade'&&on)drawTiles();if(id==='drawer'&&!on){$('#q').value='';fillDrawer('')}ui2()}
+function ui2(){const dr=$('#drawer').classList.contains('open'),sh=$('#shade').classList.contains('open'),rc=$('#recents').classList.contains('open');ph.classList.toggle('light',(!cur()&&!dr&&!sh)||rc&&!sh||!$('#lock').classList.contains('off'))}
+function open(id){closeAll();let i=stack.find(s=>s.id===id);if(!i){const el=document.createElement('div');el.className='abs app';el.style.inset='0 0 48px';i={id,el};ph.insertBefore(el,$('#drawer'));APPS[id].r(el,i);stack.push(i)}else{stack=stack.filter(s=>s!==i);stack.push(i)}stack.forEach(s=>s.el.classList.remove('show'));void i.el.offsetWidth;i.el.style.transformOrigin=window.__o||'50% 90%';i.el.classList.add('show');ui2()}
+function closeAll(){['drawer','shade','recents'].forEach(x=>$('#'+x).classList.remove('open'))}
+function hideApp(s){if(!s.el.classList.contains('show'))return;s.el.classList.add('out');setTimeout(()=>s.el.classList.remove('show','out'),220)}
+function home(){closeAll();stack.forEach(hideApp);$('#q').value='';fillDrawer('');ui2()}
+function kill(i){stack=stack.filter(s=>s!==i);i.el.classList.add('out');setTimeout(()=>i.el.remove(),230)}
+function back(){if($('#shade').classList.contains('open'))return toggle('shade',0);if($('#recents').classList.contains('open'))return toggle('recents',0);if($('#drawer').classList.contains('open'))return toggle('drawer',0);const c=cur();if(c){if(c.back&&c.back())return;kill(c);ui2()}}
+$('#nb').onclick=back;$('#nh').onclick=home;
+$('#nr').onclick=()=>{const r=$('#recents');if(r.classList.contains('open'))return toggle('recents',0);$('#shade').classList.remove('open');$('#drawer').classList.remove('open');
+r.innerHTML=stack.length?`<div class="rc">${[...stack].reverse().map((s,k)=>`<div class="card" data-i="${s.id}"><button class="x">${svg('x',22)}</button><div class="ic" style="background:${APPS[s.id].c}">${svg(APPS[s.id].i,44)}</div><b>${APPS[s.id].n}</b></div>`).join('')}</div><div style="text-align:center;margin-top:20px"><button class="btn" id="ca">Clear all</button></div>`:'<div class="empty">No recent items</div>';
+r.querySelectorAll('.card').forEach(c=>{c.onclick=()=>open(c.dataset.i);$('.x',c).onclick=e=>{e.stopPropagation();kill(stack.find(s=>s.id===c.dataset.i));c.remove();if(!stack.length){$('#nr').click();$('#nr').click()}}});const ca=$('#ca',r);if(ca)ca.onclick=()=>{[...stack].forEach(kill);toggle('recents',0)};r.onclick=e=>{if(e.target===r)toggle('recents',0)};toggle('recents',1)};
+/* ---------- state ---------- */
+const TILES=[['wifi','Internet','wifi'],['bt','Bluetooth','bt'],['dark','Dark theme','dark'],['air','Airplane mode','air'],['torch','Flashlight','torch'],['sav','Battery saver','sav']];
+function drawTiles(){$('#qs').innerHTML=TILES.map(([k,n,i])=>`<button class="tile ${S[k]?'on':''}" data-k="${k}">${svg(i,22)}<span>${n}<small>${S[k]?'On':'Off'}</small></span></button>`).join('');$('#qs').querySelectorAll('.tile').forEach(b=>b.onclick=()=>set(b.dataset.k,+!S[b.dataset.k]))}
+function set(k,v){S[k]=v;if(k==='air'&&v){S.wifi=0;S.bt=0}apply()}
+function apply(light){ph.style.filter=S.gray?'grayscale(1)':'';ph.style.fontWeight=S.bold?'700':'';ph.classList.toggle('dark',!!S.dark);{const A=ACC[S.acc||0];ph.style.setProperty('--ac',S.dark?A[1]:A[0]);ph.style.setProperty('--on',S.dark?'#1b1b1f':'#fff')}$('#wall').style.background=walls[S.wall];$('#dim').style.opacity=(1-S.bright/100)*.65;$('#torch').style.opacity=S.torch?.9:0;
+$('#i-wifi').style.display=S.wifi?'':'none';$('#i-bt').style.display=S.bt?'':'none';$('#i-air').style.display=S.air?'':'none';$('#bat').textContent=S.sav?'100% saver':'100%';$('#br').value=S.bright;save();if(light)return;drawTiles();stack.forEach(s=>s.el.refresh&&s.el.refresh())}
+$('#br').oninput=e=>{S.bright=+e.target.value;apply(1)};
+/* notifications */
+const NT=[['WebOS','Tip: swipe up on the home screen to open all apps'],['WebOS','Tip: swipe down from the top to open quick settings'],['WebOS','Tip: tap Play Store to install demo apps']];
+function notify(t,b){if(S.dnd)return;snd('notif');toast(t+': '+b)}
+function drawNt(){const N=$('#nts');N.innerHTML=NT.length?NT.map((n,i)=>`<div class="nt" data-i="${i}"><b></b><span></span></div>`).join('')+'<div style="text-align:center;margin-top:8px"><button class="btn" id="cn">Clear all</button></div>':'<p style="text-align:center;color:var(--tx2)">No notifications</p>';N.querySelectorAll('.nt').forEach((x,i)=>{x.firstChild.textContent=NT[i][0];x.lastChild.textContent=NT[i][1];x.onclick=()=>{NT.splice(i,1);drawNt()}});const c=$('#cn');if(c)c.onclick=()=>{const items=[...N.querySelectorAll('.nt')];if(!items.length){NT.length=0;drawNt();return}c.disabled=true;c.style.opacity='.5';items.forEach((x,i)=>{setTimeout(()=>{x.style.transition='transform .3s cubic-bezier(.4,0,1,1),opacity .3s';x.style.transform='translateX(110%)';x.style.opacity=0},i*55)});setTimeout(()=>{NT.length=0;drawNt()},items.length*55+280)}}
+/* gestures */
+let sy=null,sx=0;ph.addEventListener('pointerdown',e=>{const r=ph.getBoundingClientRect();sy=e.clientY-r.top;sx=e.clientY});
+ph.addEventListener('pointerup',e=>{if(sy===null)return;const dy=e.clientY-sx,sh=$('#shade').classList.contains('open'),dr=$('#drawer').classList.contains('open');
+if(sy<70&&dy>40&&!sh){closeAll();toggle('shade',1)}else if(sh&&dy<-60)toggle('shade',0);else if(!cur()&&!dr&&!sh&&dy<-60&&sy>100)toggle('drawer',1);else if(dr&&dy>80&&$('#dg').scrollTop<5)toggle('drawer',0);sy=null});
+$('#status').style.pointerEvents='auto';$('#status').onclick=()=>{if(!$('#shade').classList.contains('open')){closeAll();toggle('shade',1)}};
+/* clock */
+function tick(){const n=new Date(),t=n.toLocaleTimeString([],{hour:'numeric',minute:'2-digit',hour12:!S.h24}),d=n.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'});$('#st-time').textContent=t.replace(/ ?[AP]M/i,'');$('#h-time').textContent=t.replace(/ ?[AP]M/i,'');$('#h-date').textContent=d;$('#s-time').textContent=t;if($('#l-time')){$('#l-time').textContent=t.replace(/ ?[AP]M/i,'');$('#l-date').textContent=d}$('#s-date').textContent=d}
+tick();setInterval(tick,1000);apply();drawNt();ui2();
+setTimeout(()=>{$('#boot').style.opacity=0;setTimeout(()=>$('#boot').remove(),700)},1100);
+$('#lock').innerHTML=`<div style="margin-top:90px;text-align:center"><div id="l-time" style="font-size:88px;font-weight:300;letter-spacing:-3px"></div><div id="l-date" style="font-size:18px"></div><div style="font-size:14px;margin-top:6px;opacity:.9">100% · Fully charged</div></div><div style="margin:30px 18px 0">${NT.slice(0,2).map(n=>`<div style="background:#fff3;backdrop-filter:blur(14px);border-radius:22px;padding:12px 16px;margin-bottom:6px;font-size:14px;text-align:left"><b>${n[0]}</b><br>${n[1]}</div>`).join('')}</div><div style="flex:1"></div><div style="text-align:center;padding-bottom:70px">${svg('lock',26)}<div style="font-size:14px;margin-top:8px;opacity:.9">Tap or swipe up to unlock</div></div>`;
+const lockTo=on=>{snd(on?'lock':'unlock');closeAll();$('#lock').classList.toggle('off',!on);ui2()};$('#lock').onclick=()=>lockTo(0);$('#lk').onclick=()=>lockTo(1);tick();ui2();
+Object.assign(IC,{dnd:'<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm5 11H7v-2h10z"/>',mic:'<path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11z"/>',pad:'<path d="M6 4h2v2H6zm5 0h2v2h-2zm5 0h2v2h-2zM6 9h2v2H6zm5 0h2v2h-2zm5 0h2v2h-2zM6 14h2v2H6zm5 0h2v2h-2zm5 0h2v2h-2zm-5 5h2v2h-2z"/>',pwr:'<path d="M13 3h-2v10h2zm4.83 2.17l-1.42 1.42A6.92 6.92 0 0 1 19 12c0 3.87-3.13 7-7 7A6.995 6.995 0 0 1 7.58 6.58L6.17 5.17A8.932 8.932 0 0 0 3 12a9 9 0 0 0 18 0c0-2.74-1.23-5.18-3.17-6.83z"/>'});
+const cookie=(r=96,n=10)=>{let d='';for(let i=0;i<=180;i++){const a=i/180*6.2832,q=r*(1+.05*Math.cos(n*a));d+=(i?'L':'M')+(q*Math.sin(a)).toFixed(1)+' '+(-q*Math.cos(a)).toFixed(1)}return d+'Z'};
+$('#gear').innerHTML=svg('set',22);$('#lk').innerHTML=svg('pwr',22);$('#gear').onclick=()=>open('set');
+function drawTiles(){const Q=[['wifi','Internet','wifi',()=>S.wifi?'HomeNet_5G':'Off'],['hot','Hotspot','wifi',()=>S.hot?'On':'Off'],['bt','Bluetooth','bt',()=>S.bt?'Buds Pro':'Off'],['torch','Torch','torch',()=>S.torch?'On':'Off'],['dnd','Modes','dnd',()=>S.dnd?'Do not disturb':'Off'],['dark','Dark theme','dark',()=>S.dark?'On':'Off'],['air','Airplane mode','air',()=>S.air?'On':'Off'],['sav','Battery saver','sav',()=>S.sav?'On':'Off']];
+$('#qs').innerHTML=Q.map(([k,n,i,f])=>`<button class="tile ${S[k]?'on':''}" data-k="${k}"><span class="ci">${svg(i,20)}</span><span>${n}<small>${f()}</small></span></button>`).join('');$('#qs').querySelectorAll('.tile').forEach(b=>b.onclick=()=>{const k=b.dataset.k,v=+!S[k];b.classList.toggle('on',!!v);setTimeout(()=>set(k,v),240)});const a=$('#act');if(a)a.textContent=stack.length+(stack.length==1?' app is active':' apps are active')}
+function drawNt(){const N=$('#nts'),K={Messages:['msg','#1a73e8'],Calendar:['cal','#4285f4'],Phone:['phone','#34a853'],WebOS:['set','#607d8b']};
+N.innerHTML=NT.length?'<div class="ng">'+NT.map(()=>'<div class="nt"><span class="ic ni"></span><span><b></b><span></span></span></div>').join('')+'</div><div style="text-align:center;margin-top:10px"><button class="btn" id="cn">Clear all</button></div>':'<p style="text-align:center;color:var(--tx2)">No notifications</p>';
+N.querySelectorAll('.nt').forEach((x,i)=>{const k=K[NT[i][0]]||['info','#5f6368'],ic=x.firstChild;ic.style.background=k[1];ic.innerHTML=svg(k[0],18);x.lastChild.firstChild.textContent=NT[i][0];x.lastChild.lastChild.textContent=NT[i][1];x.onclick=()=>{x.style.transition='transform .3s cubic-bezier(.4,0,1,1),opacity .3s';x.style.transform='translateX(110%)';x.style.opacity=0;setTimeout(()=>{NT.splice(i,1);drawNt()},290)}});const c=$('#cn');if(c)c.onclick=()=>{const items=[...N.querySelectorAll('.nt')];if(!items.length){NT.length=0;drawNt();return}c.disabled=true;c.style.opacity='.5';items.forEach((x,i)=>{setTimeout(()=>{x.style.transition='transform .3s cubic-bezier(.4,0,1,1),opacity .3s';x.style.transform='translateX(110%)';x.style.opacity=0},i*55)});setTimeout(()=>{NT.length=0;drawNt()},items.length*55+280)}}
+const hu=document.createElement('div');hu.id='hu';ph.append(hu);
+function incoming(name='Kevin Carter'){if(S.dnd)return;hu.innerHTML=`<div style="display:flex;gap:12px;align-items:center"><span class="ic" style="width:44px;height:44px;border-radius:50%;background:#34a853;flex:none">${svg('phone',22)}</span><div><div style="font-size:12px;color:var(--tx2)">Phone · now</div><div style="font-size:18px">${name}</div><div style="font-size:13px;color:var(--tx2)">Incoming call</div></div></div><div style="display:flex;gap:10px;margin-top:12px"><button class="cb" id="dc" style="background:#d93025"><span style="display:inline-flex;transform:rotate(135deg)">${svg('phone',20)}</span>Decline</button><button class="cb" id="an" style="background:#1e8e3e">${svg('phone',20)}Answer</button></div>`;hu.classList.add('on');$('#dc').onclick=()=>hu.classList.remove('on');$('#an').onclick=()=>{hu.classList.remove('on');ring(name)}}
+function ring(name){const c=document.createElement('div');c.className='abs';c.style.cssText='inset:0 0 48px;z-index:85;background:var(--bg);color:var(--tx);display:flex;flex-direction:column;align-items:center;padding-top:110px;animation:tl .4s both';let s=0;
+c.innerHTML=`<span class="ic" style="width:96px;height:96px;border-radius:50%;background:var(--ac);color:var(--on);font-size:38px">${name[0]}</span><div style="font-size:28px;margin-top:18px">${name}</div><div id="ct2" style="color:var(--tx2);margin-top:6px">Connecting…</div><div style="flex:1"></div><div style="display:flex;gap:22px;margin-bottom:26px">${[['Mute','mic'],['Speaker','vol'],['Keypad','pad']].map(([n,i])=>`<div style="text-align:center;font-size:12px;color:var(--tx2)"><div class="rb2" style="width:60px;height:60px;margin:0 auto 6px">${svg(i,24)}</div>${n}</div>`).join('')}</div><button class="cb" id="en" style="flex:none;background:#d93025;width:110px;height:56px;border-radius:28px;margin-bottom:30px"><span style="display:inline-flex;transform:rotate(135deg)">${svg('phone',26)}</span></button>`;ph.insertBefore(c,$('#drawer'));
+const t=setInterval(()=>{s++;const x=$('#ct2',c);if(x)x.textContent=fmtT(s)},1000);$('#en',c).onclick=()=>{clearInterval(t);c.remove()}}
+
+Object.assign(IC,{shield:'<path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11z"/>',pin:'<path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/>',key:'<path d="M12.65 10A6 6 0 1 0 12.65 14H17v4h4v-4h2v-4zM7 14a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/>',sync:'<path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99zM21 9l-3.99-4v3H10v2h7.01v3z"/>',heart:'<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54z"/>',person:'<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>',pinfo:'<path d="M17 1H7a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2zm-4 15h-2v-5h2zm0-7h-2V7h2z"/>'});
+Object.assign(DEF,{loc:1,bk:1,af:1,par:0,h24:0,upd:1,fmd:1,scan:1});S=Object.assign({},DEF,S);
+ph.addEventListener('touchstart',e=>{const t=e.touches[0],r=ph.getBoundingClientRect();sy=t.clientY-r.top;sx=t.clientY},{passive:true});
+ph.addEventListener('touchend',e=>{const t=e.changedTouches[0];ph.dispatchEvent(new PointerEvent('pointerup',{clientY:t.clientY}))},{passive:true});
+Object.assign(DEF,{nh:1,lockn:1,hu2:1,bub:0,gray:0,bold:0,mag:0,cap:0});S=Object.assign({},DEF,S);
+Object.assign(IC,{star:'<path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>',acc2:'<path d="M12 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm9 7h-6v13h-2v-6h-2v6H9V9H3V7h18z"/>'});
+const CAT=[['snap','Snapline','Lumen Labs','Apps',4.7,'48 MB','#e91e63','gal'],['orb','Orbit Maps','Northstar','Apps',4.5,'92 MB','#1a73e8','pin'],['tem','Tempo Fit','Pulse Co','Apps',4.6,'61 MB','#34a853','sav'],['bud','Budgetly','Fintrail','Apps',4.4,'35 MB','#00897b','calc'],['pod','Podstream','Hollow Pines','Apps',4.3,'54 MB','#8e24aa','music'],['chs','Tic Tac Pro','Rook & Co','Games',4.8,'120 MB','#5d4037','person'],['blk','BlockPop','Kite Games','Games',4.5,'210 MB','#f9a825','pal'],['run','Skyrunner','Nova Drive','Games',4.6,'340 MB','#d84315','air'],['lng','Lingo Learn','Bright Owl','Apps',4.7,'70 MB','#ef6c00','msg'],['day','Daybook','Lumen Labs','Apps',4.2,'28 MB','#3949ab','notes']];
+let INS=store('ins')||[];
+const reg=c=>{if(APPS['x_'+c[0]])return;APPS['x_'+c[0]]={n:c[1],c:c[6],i:c[7],r(el,inst){if(IMP[c[0]])return IMP[c[0]](el,inst);el.innerHTML=`<div style="flex:1;display:grid;place-items:center;text-align:center;padding:30px"><div><span class="ic" style="width:96px;height:96px;border-radius:32px;background:${c[6]};margin:0 auto 20px">${svg(c[7],48)}</span><div style="font-size:26px">${c[1]}</div><div style="color:var(--tx2);margin-top:6px">${c[2]}</div><div style="color:var(--tx2);margin-top:26px;font-size:14px">Welcome! This demo app has no content yet.</div></div></div>`}};ORDER.push('x_'+c[0]);fillDrawer('');hg2fill()};
+CAT.filter(c=>INS.includes(c[0])).forEach(reg);
+Object.assign(APPS,{play:{n:'Play Store',c:'linear-gradient(135deg,#00c853,#2962ff)',i:'play',r(el){let tab=0,q='',dl={};const T=['For you','Games','Apps','Installed'];
+el.innerHTML=`<div style="padding:10px 16px 0"><div class="sq" style="margin:0 0 10px;height:50px">${svg('search',22)}<input id="pq" placeholder="Search apps & games"></div><div class="tabs" style="margin:0 0 6px">${T.map((t,i)=>`<button class="${i?'':'on'}">${t}</button>`).join('')}</div></div><div class="body" id="pl"></div>`;
+const list=()=>{const L=CAT.filter(c=>(tab==0||(tab==1&&c[3]=='Games')||(tab==2&&c[3]=='Apps')||(tab==3&&INS.includes(c[0])))&&c[1].toLowerCase().includes(q));
+$('#pl',el).innerHTML=(tab==0&&!q?`<div style="height:130px;border-radius:24px;background:linear-gradient(120deg,#5d4037,#d84315);color:#fff;padding:20px;margin:8px 0 12px"><small style="opacity:.8">EDITORS’ CHOICE</small><div style="font-size:24px;margin:4px 0">Tic Tac Pro</div><div style="font-size:13px;opacity:.9">Play smarter, one move at a time</div></div>`:'')+(L.length?L.map(c=>`<div class="row" style="gap:14px"><span class="ic" style="width:52px;height:52px;border-radius:16px;background:${c[6]};flex:none;box-shadow:none">${svg(c[7],28)}</span><span style="flex:1;min-width:0"><div>${c[1]}</div><small style="color:var(--tx2)">${c[2]} · ${c[3]}</small><br><small style="color:var(--tx2);display:inline-flex;align-items:center;gap:3px">${c[4]} ${svg('star',12)} · ${c[5]}</small></span><button class="btn" data-i="${c[0]}" style="padding:8px 16px;${dl[c[0]]!=null?'background:var(--sf);color:var(--tx)':''}">${INS.includes(c[0])?'Open':dl[c[0]]!=null?dl[c[0]]+'%':'Install'}</button></div>`).join(''):'<p style="text-align:center;color:var(--tx2);margin-top:50px">Nothing here yet</p>');
+el.querySelectorAll('#pl [data-i]').forEach(b=>b.onclick=()=>{const c=CAT.find(x=>x[0]==b.dataset.i);if(INS.includes(c[0]))return open('x_'+c[0]);if(dl[c[0]]!=null)return;dl[c[0]]=0;list();const t=setInterval(()=>{if(!el.isConnected)return clearInterval(t);dl[c[0]]=Math.min(100,dl[c[0]]+5+Math.random()*12|0);if(dl[c[0]]>=100){clearInterval(t);delete dl[c[0]];INS.push(c[0]);store('ins',INS);reg(c);notify('Play Store',c[1]+' installed')}list()},250)})};
+el.querySelectorAll('.tabs button').forEach((b,i)=>b.onclick=()=>{tab=i;el.querySelectorAll('.tabs button').forEach((x,j)=>x.classList.toggle('on',i==j));list()});$('#pq',el).oninput=e=>{q=e.target.value.toLowerCase();list()};list()}}});
+Object.assign(IC,{web:'<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.93 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14a8.2 8.2 0 0 1 0-4h3.38a16.5 16.5 0 0 0 0 4zm.81 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.99 7.99 0 0 1 5.07 16zm2.95-8H5.07a7.99 7.99 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.02 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66a14.7 14.7 0 0 1 0-4h4.68a14.7 14.7 0 0 1 0 4zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14a16.5 16.5 0 0 0 0-4h3.38a8.2 8.2 0 0 1 0 4z"/>',bk2:'<path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/>',fw:'<path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>',home:'<path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>',rld:'<path d="M17.65 6.35A8 8 0 1 0 19.73 14h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/>'});
+Object.assign(IC,{add:'<path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/>',more:'<path d="M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>',ext:'<path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>',desk:'<path d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7v2H8v2h8v-2h-2v-2h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H3V4h18v12z"/>'});
+const E=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+Object.assign(APPS,{web:{n:'Browser',c:'linear-gradient(135deg,#4285f4,#34a853)',i:'web',r(el,inst){
+let T=[],cu=0,BM=store('bm')||[['Wikipedia','https://en.m.wikipedia.org'],['OpenStreetMap','https://www.openstreetmap.org'],['Hacker News','https://news.ycombinator.com'],['Internet Archive','https://archive.org']],HL=store('hl')||[],uid=0,MODE='web',DESK=0;
+const SC=[
+  ['Wikipedia','https://en.m.wikipedia.org','#607d8b'],
+  ['Google','https://www.google.com/search?q=WebOS&igu=1','#4285f4'],
+  ['Google Account','webos://google-signin','#1a73e8'],
+  ['OpenStreetMap','https://www.openstreetmap.org','#7cb342'],
+  ['Archive.org','https://archive.org','#455a64'],
+  ['AI Mode','https://www.google.com/search?udm=50&igu=1','#7e57c2'],
+  ['Example','https://example.com','#8e24aa']
+];
+const BUILTIN={
+  'webos://welcome':{t:'WebOS Browser Guide',html:`<div style="padding:22px 18px;font-family:system-ui,sans-serif;line-height:1.55;color:var(--tx)">
+    <h2 style="margin:0 0 8px;font-size:22px">Welcome to WebOS Browser</h2>
+    <p style="color:var(--tx2);font-size:14px">Browse the web right inside WebOS with multi-tab support, real Google Account sign-in links, instant search, bookmarks, and history.</p>
+    <div style="background:var(--sf);border-radius:16px;padding:14px;margin:14px 0;font-size:13px">
+      <b>Tips for best browsing:</b>
+      <ul style="margin:6px 0 0 18px;padding:0">
+        <li><b>Google Account:</b> Tap the profile avatar in the top bar or visit <code>webos://google-signin</code> to open official Google sign-in (<code>accounts.google.com</code>) directly in a real browser tab.</li>
+        <li><b>Web Mode:</b> Searches via Google (<code>?igu=1</code>) & loads websites directly in-app.</li>
+        <li><b>Instant Wiki Mode:</b> Fetches live Wikipedia articles & instant answers natively with zero iframe blocks!</li>
+        <li><b>Blocked Sites:</b> Real <code>accounts.google.com</code> login pages send <code>X-Frame-Options: DENY</code>; WebOS opens real Google login externally rather than using fake or simulated accounts.</li>
+      </ul>
+    </div>
+  </div>`}
+};
+const nt=()=>({id:++uid,u:'',type:'home',t:'New tab',q:'',H:[],hi:-1,wikiData:null,loading:false,blocked:false});
+T.push(nt());
+const bt=(id,ic,x='',title='')=>`<button class="rb2" id="${id}" title="${title}" style="background:none;width:40px;height:40px;${x}">${svg(ic,20)}</button>`;
+el.innerHTML=`
+<div style="padding:8px 10px 4px;background:var(--bg)">
+  <div class="sq" style="margin:0;height:44px;padding:0 6px 0 14px;gap:6px">
+    <span id="wsec" style="display:flex;color:var(--tx2)">${svg('search',17)}</span>
+    <input id="wu" placeholder="Search or enter URL (e.g. wikipedia.org)" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <button class="rb2" id="wgo" title="Go" style="width:32px;height:32px;background:var(--ac);color:var(--on);display:none">${svg('fw',16)}</button>
+    <button class="rb2" id="ws" title="Bookmark" style="width:32px;height:32px;background:none">${svg('star',18)}</button>
+    <button class="rb2" id="wga" title="Google Account" style="width:32px;height:32px;background:none;padding:0"></button>
+  </div>
+</div>
+<div style="display:flex;gap:6px;padding:4px 12px 6px;align-items:center">
+  <button class="btn" data-md="web" style="padding:6px 14px;font-size:12.5px">Web</button>
+  <button class="btn" data-md="wiki" style="padding:6px 14px;font-size:12.5px">Instant Wiki</button>
+  <span style="flex:1"></span>
+  <button class="rb2" id="wrld" title="Reload" style="width:32px;height:32px;background:var(--sf)">${svg('rld',16)}</button>
+</div>
+<div id="wp" style="height:3px;background:transparent"></div>
+<div id="wc" style="flex:1;overflow:auto;position:relative"></div>
+<div style="display:flex;justify-content:space-around;align-items:center;padding:4px 6px;border-top:1px solid #8882;background:var(--bg)">
+  ${bt('wb','bk2','','Back')}
+  ${bt('wf','fw','','Forward')}
+  ${bt('whm','home','','Home')}
+  ${bt('wn','add','','New Tab')}
+  <button class="rb2" id="wtb" title="Tabs" style="background:none;width:40px;height:40px"><span id="wcnt" style="border:2px solid currentColor;border-radius:7px;width:21px;height:21px;display:grid;place-items:center;font-size:11.5px;font-weight:600">1</span></button>
+  ${bt('wmn','more','','Menu')}
+</div>
+<div class="wsw" id="wsw"></div>
+<div class="wm" id="wm">
+  <div data-m="n">New tab</div>
+  <div data-m="ga" id="wmga">Google Account Sign-In</div>
+  <div data-m="b">Bookmarks</div>
+  <div data-m="h">History</div>
+  <div data-m="d" id="wmdesk">Desktop site: Off</div>
+  <div data-m="g">Browser guide</div>
+  <div data-m="c">Clear history</div>
+</div>`;
+
+const U=$('#wu',el),C=$('#wc',el),P=$('#wp',el),SW=$('#wsw',el),M=$('#wm',el),WGO=$('#wgo',el),WSEC=$('#wsec',el),WGA=$('#wga',el),tb=()=>T[cu];
+let progTimer=null;
+const prog=(done=0)=>{
+  clearTimeout(progTimer);
+  if(done){
+    P.style.transition='width .2s,opacity .3s .15s';
+    P.style.width='100%';
+    P.style.opacity='0';
+    return;
+  }
+  P.style.cssText='height:3px;background:var(--ac);border-radius:2px;width:0;opacity:1;transition:none';
+  void P.offsetWidth;
+  P.style.transition='width 1.2s cubic-bezier(.2,.8,.2,1)';
+  P.style.width='82%';
+};
+
+const gLogo=(sz=28)=>`<svg viewBox="0 0 48 48" width="${sz}" height="${sz}"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>`;
+
+const GA=()=>{const g=store('gacct');return g&&Array.isArray(g.list)?g:{list:[],cur:-1}};
+const GSET=g=>store('gacct',g);
+const avHtml=(a,z)=>a.picture?`<img src="${E(a.picture)}" referrerpolicy="no-referrer" style="width:${z}px;height:${z}px;border-radius:50%;object-fit:cover;flex:none">`:`<span class="ic" style="width:${z}px;height:${z}px;border-radius:50%;background:var(--ac);color:var(--on);box-shadow:none;flex:none;font-size:${z*.42|0}px">${E((a.name||a.email||'?')[0].toUpperCase())}</span>`;
+const renderAvatar=()=>{
+  const g=GA(),a=g.list[g.cur];
+  WGA.innerHTML=a?avHtml(a,26):`<span style="width:26px;height:26px;border-radius:50%;background:var(--sf);color:var(--tx2);display:grid;place-items:center">${svg('person',16)}</span>`;
+  $('#wmga',el).textContent=a?'Google: '+a.email:'Google Account Sign-In';
+};
+const rowS=(a,b,u,delIdx=-1)=>`<div class="row" data-go="${E(u)}" style="cursor:pointer;gap:12px;padding:12px 14px"><span class="ic" style="width:36px;height:36px;border-radius:50%;background:var(--ac);color:var(--on);box-shadow:none;flex:none;font-size:15px">${E((a||'?')[0].toUpperCase())}</span><span style="min-width:0;flex:1"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px">${E(a)}</div><small style="color:var(--tx2);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${E(u)}</small></span>${delIdx>=0?`<button class="rb2" data-delbm="${delIdx}" style="width:32px;height:32px;background:none;flex:none">${svg('x',16)}</button>`:''}</div>`;
+
+const isGoogleAuthUrl=u=>/^(https?:\/\/)?(accounts\.google\.com|myaccount\.google\.com)/i.test(u.trim());
+
+const openRealGoogleAuth=(targetUrl='https://accounts.google.com/ServiceLogin')=>{
+  const win=window.open(targetUrl,'_blank','noopener,noreferrer');
+  if(!win)ext(targetUrl);
+  return win;
+};
+
+const normUrl=v=>{
+  v=v.trim();
+  if(!v)return null;
+  if(/^webos:\/\/google-signin/i.test(v)||isGoogleAuthUrl(v)){
+    const dest=isGoogleAuthUrl(v)?(/^https?:\/\//i.test(v)?v:'https://'+v):'https://accounts.google.com/ServiceLogin';
+    return {type:'gauth_external',u:dest,t:'Google Account'};
+  }
+  if(BUILTIN[v.toLowerCase()])return {type:'builtin',u:v.toLowerCase(),t:BUILTIN[v.toLowerCase()].t};
+  if(/^https?:\/\//i.test(v))return {type:'url',u:v};
+  if(/^[\w-]+(\.[\w-]+)+(:\d+)?(\/\S*)?$/i.test(v)&&!v.includes(' '))return {type:'url',u:'https://'+v};
+  return {type:'query',q:v};
+};
+
+async function fetchWiki(q,t){
+  t.loading=true;
+  t.wikiData=null;
+  view();
+  try{
+    const sr=await fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch='+encodeURIComponent(q)+'&format=json&origin=*&srlimit=6');
+    const sd=await sr.json();
+    const hits=(sd.query&&sd.query.search)||[];
+    let topSummary=null;
+    if(hits.length){
+      try{
+        const sumRes=await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(hits[0].title.replace(/ /g,'_')));
+        if(sumRes.ok)topSummary=await sumRes.json();
+      }catch(e){}
+    }
+    t.wikiData={q,hits,topSummary};
+  }catch(e){
+    t.wikiData={q,error:true,hits:[]};
+  }
+  t.loading=false;
+  if(t.c)delete t.c.dataset.r;
+  if(tb()===t)view();
+}
+
+const updateNavState=()=>{
+  const t=tb();
+  const wb=$('#wb',el),wf=$('#wf',el);
+  wb.style.opacity=(t.hi>0||t.type!=='home')?'1':'.35';
+  wf.style.opacity=(t.hi<t.H.length-1)?'1':'.35';
+  $('#wcnt',el).textContent=T.length;
+  $('#ws',el).style.color=t.u&&BM.some(b=>b[1]===t.u)?'#f9ab00':'';
+  WSEC.innerHTML=(t.type==='frame'||t.type==='gauth_external')?svg('lock',16):svg('search',17);
+  $('#wmdesk',el).textContent='Desktop site: '+(DESK?'On':'Off');
+  renderAvatar();
+};
+
+const loadGSI=()=>new Promise((res,rej)=>{if(window.google&&google.accounts&&google.accounts.oauth2)return res();const x=document.createElement('script');x.src='https://accounts.google.com/gsi/client';x.async=true;x.onload=res;x.onerror=()=>rej(new Error('Could not load Google sign-in'));document.head.append(x)});
+const refreshG=()=>{T.forEach(x=>{if(x.c&&x.type==='gauth_external')delete x.c.dataset.r});view(tb().type==='gauth_external'?0:1)};
+const gLoadOff=()=>{const o=document.querySelector('.gload');if(o)o.remove()};
+const gLoadOn=msg=>{gLoadOff();const c=tb().c;if(!c)return;const d=document.createElement('div');d.className='gload';d.innerHTML=`${gLogo(36)}<div class="sp"></div><div style="font-size:13.5px;color:var(--tx2)">${E(msg)}</div>`;c.append(d)};
+const gSignIn=()=>{
+  const cid=store('gcid');
+  if(!cid){const e=tb().c&&tb().c.querySelector('#gci');if(e){e.scrollIntoView({block:'center'});e.focus()}return toast('Paste your Google Client ID here to enable real sign-in')}
+  if(!(window.google&&google.accounts&&google.accounts.oauth2)){
+    gLoadOn('Connecting to Google…');
+    loadGSI().then(()=>{gLoadOff();toast('Ready - tap sign in again')}).catch(e=>{gLoadOff();toast(e.message)});
+    return;
+  }
+  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+  gLoadOn('Opening Google sign-in…');
+  const tc=google.accounts.oauth2.initTokenClient({client_id:cid,scope:'openid email profile',prompt:'select_account',
+    callback:async r=>{
+      if(r.error){gLoadOff();return toast('Sign-in cancelled')}
+      gLoadOn('Signing you in…');
+      try{
+        const u=await(await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+r.access_token}})).json();
+        if(!u.email)throw 0;
+        const g=GA(),acc={sub:u.sub,name:u.name||u.email,email:u.email,picture:u.picture||'',verified:1,at:Date.now()};
+        const i=g.list.findIndex(x=>x.sub===u.sub);if(i>=0)g.list[i]=acc;else g.list.push(acc);
+        g.cur=i>=0?i:g.list.length-1;GSET(g);gLoadOff();toast('Signed in as '+acc.email);refreshG();
+      }catch(e){gLoadOff();toast('Could not read account info')}
+    },
+    error_callback:()=>{gLoadOff();toast('Sign-in window closed')}});
+  // Browsers only allow the Google popup to open directly from the click, so it
+  // opens right away; the branded overlay above is what's visible meanwhile.
+  tc.requestAccessToken();
+};
+const renderRealGoogleLoginPage=()=>{
+  const g=GA(),cid=store('gcid')||'';
+  const accs=g.list.map((a,i)=>`<div class="row" style="gap:12px;padding:12px 14px;${i===g.cur?'outline:2px solid var(--ac);':''}">${avHtml(a,40)}<span style="flex:1;min-width:0"><div style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${E(a.name)}</div><small style="color:var(--tx2);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${E(a.email)}${a.verified?'':' · not verified'}</small></span>${i===g.cur?'<small style="color:var(--ac)">Active</small>':`<button class="btn" data-gu="${i}" style="padding:6px 12px;font-size:12px">Use</button>`}<button class="rb2" data-gr="${i}" title="Remove" style="width:32px;height:32px;background:none;flex:none">${svg('x',16)}</button></div>`).join('');
+  return `<div style="padding:18px 14px 28px;font-family:Roboto,system-ui,sans-serif">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">${gLogo(30)}<div style="font-size:20px;font-weight:500">Google Account</div></div>
+    ${accs?`<div class="sec" style="margin:0 4px 8px">Accounts on this device</div>${accs}`:'<p style="color:var(--tx2);font-size:13.5px;margin:0 4px 14px">No account signed in yet.</p>'}
+    <button class="btn" id="gsign" style="width:100%;background:#1a73e8;color:#fff;padding:13px;margin:10px 0 8px">${g.list.length?'Add another Google account':'Sign in with Google'}</button>
+    <div style="font-size:12px;color:var(--tx2);margin:0 4px 16px">Opens Google's own account chooser in a separate window. Your accounts are kept in this browser's real localStorage, so they stay after a refresh.</div>
+    <div class="sec" style="margin:0 4px 8px">Or pick an account on google.com</div>
+    <button class="btn" id="gchoose" style="width:100%;background:var(--sf);color:var(--tx);padding:12px;margin-bottom:8px">Pick an account on google.com ↗ (then link it below)</button>
+    <div style="display:flex;gap:8px;margin-bottom:4px"><input id="gem" placeholder="Email you chose (to show here)" style="${IS}"><button class="btn" id="gadd" style="padding:8px 16px">Link</button></div>
+    <div style="font-size:12px;color:var(--tx2);margin:0 4px 16px">Websites can't tell WebOS which account you picked in another tab, so linked emails are labelled "not verified". Use the client ID below for a verified sign-in.</div>
+    <div class="sec" style="margin:0 4px 8px">Verified sign-in setup</div>
+    <div style="font-size:12px;color:var(--tx2);margin:0 4px 8px;line-height:1.5">Create an OAuth "Web application" client ID in Google Cloud Console and add <b>${E(location.origin)}</b> as an authorized JavaScript origin. It won't work from a file:// page.</div>
+    <div style="display:flex;gap:8px"><input id="gci" value="${E(cid)}" placeholder="xxxx.apps.googleusercontent.com" style="${IS}"><button class="btn" id="gcs" style="padding:8px 16px">Save</button></div>
+  </div>`;
+};
+const bindGoogle=c=>{
+  const q=x=>c.querySelector(x);
+  q('#gsign').onclick=gSignIn;
+  q('#gchoose').onclick=()=>{ext('https://accounts.google.com/AccountChooser?continue='+encodeURIComponent('https://myaccount.google.com/'));window.addEventListener('focus',()=>{const i=c.isConnected&&c.querySelector('#gem');if(i){i.scrollIntoView({block:'center'});i.focus();toast('Enter the account you picked to finish')}},{once:true})};
+  q('#gadd').onclick=()=>{const v=q('#gem').value.trim();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v))return toast('Enter a valid email');const g=GA();let i=g.list.findIndex(a=>a.email===v);if(i<0){g.list.push({sub:'m:'+v,name:v.split('@')[0],email:v,picture:'',verified:0});i=g.list.length-1}g.cur=i;GSET(g);refreshG()};
+  q('#gcs').onclick=()=>{const v=q('#gci').value.trim();store('gcid',v||null);toast(v?'Client ID saved':'Client ID removed');if(v)loadGSI().catch(()=>{});refreshG()};
+  c.querySelectorAll('[data-gu]').forEach(b=>b.onclick=()=>{const g=GA();g.cur=+b.dataset.gu;GSET(g);refreshG()});
+  c.querySelectorAll('[data-gr]').forEach(b=>b.onclick=()=>{const g=GA(),i=+b.dataset.gr;g.list.splice(i,1);if(i<g.cur)g.cur--;g.cur=Math.min(g.cur,g.list.length-1);GSET(g);refreshG()});
+  if(store('gcid'))loadGSI().catch(()=>{});
+};
+const tabEl=t=>{if(!t.c){t.c=document.createElement('div');t.c.style.cssText='position:absolute;inset:0;overflow:auto';C.append(t.c)}[...C.children].forEach(x=>x.style.display=x===t.c?'':'none');return t.c};
+const view=(keep)=>{
+  const t=tb();
+  if(document.activeElement!==U){
+    U.value=(t.type==='frame'||t.type==='builtin'||t.type==='gauth_external')?t.u:t.type==='wiki'?t.q:'';
+    WGO.style.display='none';
+  }
+  updateNavState();
+  const C=tabEl(t);
+  if(keep&&C.dataset.r)return;
+  C.classList.remove('rise');void C.offsetWidth;C.classList.add('rise');
+
+  let h='';
+  if(t.type==='home'){
+    h=`<div style="padding:20px 18px 14px;text-align:center">
+      <div data-go="webos://google-signin" style="display:inline-flex;align-items:center;gap:8px;background:var(--sf);padding:6px 14px;border-radius:22px;margin-bottom:12px;cursor:pointer;font-size:12.5px">${gLogo(16)}<span>${(()=>{const g=GA(),a=g.list[g.cur];return a?E(a.email):'Sign in with Google Account'})()}</span></div>
+      <div style="font-size:28px;font-weight:300;margin-bottom:4px;letter-spacing:-.5px">WebOS Browser</div>
+      <div style="font-size:13px;color:var(--tx2);margin-bottom:18px">Search Google or tap a quick site</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px 8px">
+        ${SC.map(s=>`<div data-go="${E(s[1])}" style="cursor:pointer;font-size:12px"><span class="ic" style="width:52px;height:52px;border-radius:50%;background:${s[2]};margin:0 auto 7px;font-size:20px">${s[0][0]}</span>${E(s[0])}</div>`).join('')}
+      </div>
+    </div>
+    <div style="padding:0 14px 16px">
+      <div class="row" data-go="webos://welcome" style="cursor:pointer;gap:12px;padding:12px 14px">
+        <span class="ic" style="width:36px;height:36px;border-radius:12px;background:var(--ac);color:var(--on);box-shadow:none;flex:none">${svg('info',18)}</span>
+        <span style="flex:1;min-width:0"><div style="font-size:14px">Browser Guide & Tips</div><small style="color:var(--tx2)">Google Sign-In, ?igu=1 search & Instant Wiki</small></span>
+      </div>
+    </div>`+(BM.length?`<div class="sec" style="margin-left:18px">Bookmarks</div><div style="padding:0 14px 16px">${BM.slice(-6).reverse().map(b=>rowS(b[0],b[1],b[1])).join('')}</div>`:'');
+  }
+  else if(t.type==='gauth_external'){
+    h=renderRealGoogleLoginPage();
+  }
+  else if(t.type==='builtin'){
+    const b=BUILTIN[t.u];
+    h=b?b.html:'<div style="padding:30px;text-align:center">Page not found</div>';
+  }
+  else if(t.type==='frame'){
+    const host=(()=>{try{return new URL(t.u).hostname.replace(/^www\./,'')}catch(e){return t.u}})();
+    const isGoogle=/google\./i.test(host);
+    const isAI=isGoogle&&/[?&]udm=50|aimode/i.test(t.u);
+    const isLikelyBlocked=/(youtube\.com|github\.com|twitter\.com|x\.com|facebook\.com|instagram\.com|reddit\.com|nytimes\.com|amazon\.com)/i.test(host);
+    h=`<div style="height:100%;display:flex;flex-direction:column">
+      ${isGoogle?`<div style="padding:5px 12px;background:var(--sf);border-bottom:1px solid #8882;display:flex;align-items:center;justify-content:space-between;font-size:12px;gap:8px">
+        <span style="display:flex;align-items:center;gap:6px;min-width:0">${gLogo(15)}<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Google</span></span>
+        <button data-go="webos://google-signin" style="background:var(--ac);color:var(--on);border:0;border-radius:14px;padding:4px 11px;font-size:11.5px;cursor:pointer;flex:none">Sign in ↗</button>
+      </div>`:''}
+      ${isAI?`<div style="padding:6px 12px;background:var(--sf);font-size:12px;display:flex;align-items:center;justify-content:space-between;gap:8px"><span>Uploading files to AI Mode works best in a full tab.</span><a href="${E(t.u)}" target="_blank" rel="noopener" style="background:var(--ac);color:var(--on);border-radius:14px;padding:4px 11px;text-decoration:none;flex:none">Open full tab ↗</a></div>`:''}
+      <div style="flex:1;position:relative;background:#fff;overflow:hidden">
+        <iframe id="wif" style="border:0;${DESK?'width:200%;height:200%;transform:scale(.5);transform-origin:0 0':'width:100%;height:100%'}" sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads allow-presentation allow-orientation-lock allow-top-navigation-by-user-activation" allow="camera *;microphone *;clipboard-read *;clipboard-write *;fullscreen *;geolocation *;autoplay *" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        <div id="wbl" style="position:absolute;inset:0;display:${t.blocked?'flex':'none'};flex-direction:column;align-items:center;justify-content:center;background:var(--bg);text-align:center;padding:28px 20px;overflow:auto">
+          <span class="ic" style="width:64px;height:64px;border-radius:50%;background:var(--sf);color:var(--ac);box-shadow:none;margin-bottom:14px">${svg('ext',30)}</span>
+          <div style="font-size:18px;font-weight:500;margin-bottom:6px">${E(host)}</div>
+          <p style="color:var(--tx2);font-size:13.5px;max-width:290px;margin:0 0 18px">This website restricts embedding inside frames, or your current sandbox blocks external frames.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+            <a class="btn" href="${E(t.u)}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">${svg('ext',16)}Open in New Tab</a>
+            <button class="btn" id="wtrywiki" style="background:var(--sf);color:var(--tx)">Search Wiki Instead</button>
+          </div>
+        </div>
+      </div>
+      <div style="padding:6px 12px;font-size:11.5px;color:var(--tx2);background:var(--sf);display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Viewing ${E(host)}</span>
+        <div style="display:flex;gap:10px;flex:none">
+          <button id="wtogblk" style="background:none;border:0;color:var(--ac);font-size:11.5px;cursor:pointer;padding:0">${t.blocked?'Show Frame':'Refused?'}</button>
+          <a href="${E(t.u)}" target="_blank" rel="noopener" style="color:var(--ac);text-decoration:none;font-weight:500">External ↗</a>
+        </div>
+      </div>
+    </div>`;
+  }
+  else if(t.type==='wiki'){
+    if(t.loading){
+      h=`<div style="padding:48px 20px;text-align:center;color:var(--tx2)"><div style="font-size:16px;margin-bottom:6px">Searching Wikipedia…</div><small>Fetching live results for “${E(t.q)}”</small></div>`;
+    }else if(t.wikiData&&t.wikiData.error){
+      h=`<div style="padding:36px 20px;text-align:center"><div style="font-size:17px;margin-bottom:8px">Offline or network blocked</div><p style="color:var(--tx2);font-size:13.5px;margin-bottom:18px">Could not reach Wikipedia API from this environment.</p><a class="btn" href="https://www.google.com/search?q=${encodeURIComponent(t.q)}" target="_blank" rel="noopener" style="text-decoration:none">Search on Google ↗</a></div>`;
+    }else if(t.wikiData){
+      const {topSummary,hits}=t.wikiData;
+      h=`<div style="padding:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:12.5px;color:var(--tx2)">Instant Results for “${E(t.q)}”</span>
+          <a href="https://www.google.com/search?q=${encodeURIComponent(t.q)}" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--ac);text-decoration:none">Google ↗</a>
+        </div>
+        ${topSummary&&topSummary.extract?`<div class="row" style="display:block;padding:16px;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;margin-bottom:8px">
+            <div>
+              <div style="font-size:18px;font-weight:500">${E(topSummary.title)}</div>
+              ${topSummary.description?`<div style="font-size:12.5px;color:var(--ac)">${E(topSummary.description)}</div>`:''}
+            </div>
+            ${topSummary.thumbnail?`<img src="${E(topSummary.thumbnail.source)}" style="width:56px;height:56px;border-radius:12px;object-fit:cover;flex:none">`:''}
+          </div>
+          <div style="font-size:14px;line-height:1.55;color:var(--tx)">${E(topSummary.extract)}</div>
+          ${topSummary.content_urls&&topSummary.content_urls.mobile?`<div style="margin-top:12px;display:flex;gap:8px"><button class="btn" data-go="${E(topSummary.content_urls.mobile.page)}" style="padding:7px 14px;font-size:12.5px">Open Full Page</button><a class="btn" href="${E(topSummary.content_urls.mobile.page)}" target="_blank" rel="noopener" style="background:var(--bg);color:var(--tx);text-decoration:none;padding:7px 14px;font-size:12.5px">External ↗</a></div>`:''}
+        </div>`:''}
+        <div class="sec" style="margin-top:6px">Related Articles</div>
+        ${hits.length?hits.map(hit=>{
+          const clean=hit.snippet.replace(/<[^>]+>/g,'');
+          const pageUrl='https://en.m.wikipedia.org/wiki/'+encodeURIComponent(hit.title.replace(/ /g,'_'));
+          return `<div class="row" data-go="${E(pageUrl)}" style="display:block;cursor:pointer;padding:13px 15px">
+            <div style="font-size:15px;font-weight:500;color:var(--ac)">${E(hit.title)}</div>
+            <div style="font-size:13px;color:var(--tx2);margin-top:4px;line-height:1.4">${E(clean)}…</div>
+          </div>`;
+        }).join(''):'<p style="text-align:center;color:var(--tx2);margin-top:24px">No Wikipedia articles matched that query.</p>'}
+      </div>`;
+    }
+  }
+  else if(t.type==='bm'){
+    h=`<div class="hd" style="padding-left:18px">Bookmarks</div><div style="padding:0 14px 16px">${BM.length?BM.slice().reverse().map((b,idx)=>rowS(b[0],b[1],b[1],BM.length-1-idx)).join(''):'<p style="text-align:center;color:var(--tx2);margin-top:40px">No bookmarks yet. Tap the star icon in the address bar.</p>'}</div>`;
+  }
+  else{
+    h=`<div class="hd" style="padding-left:18px"><span>History</span>${HL.length?'<button class="btn" id="wclrhl" style="padding:6px 14px;font-size:12.5px;background:var(--sf);color:var(--tx)">Clear</button>':''}</div><div style="padding:0 14px 16px">${HL.length?HL.slice().reverse().map(b=>rowS(b[0],b[1],b[1])).join(''):'<p style="text-align:center;color:var(--tx2);margin-top:40px">No browsing history</p>'}</div>`;
+  }
+
+  C.innerHTML=h;
+
+  if(t.type==='gauth_external')bindGoogle(C);
+
+  const f=$('#wif',C);
+  if(f){
+    f.onload=()=>{prog(1)};
+    f.onerror=()=>{t.blocked=true;prog(1);if(tb()===t)view()};
+    f.src=t.u;
+  }
+  const tog=$('#wtogblk',C);
+  if(tog)tog.onclick=()=>{t.blocked=!t.blocked;view()};
+  const tw=$('#wtrywiki',C);
+  if(tw)tw.onclick=()=>{MODE='wiki';mdu();go(t.t||t.u)};
+  const clr=$('#wclrhl',C);
+  if(clr)clr.onclick=()=>{HL=[];store('hl',HL);toast('History cleared');view()};
+
+  C.querySelectorAll('[data-delbm]').forEach(btn=>btn.onclick=e=>{
+    e.stopPropagation();
+    BM.splice(+btn.dataset.delbm,1);
+    store('bm',BM);
+    toast('Bookmark removed');
+    view();
+  });
+  C.querySelectorAll('[data-go]').forEach(d=>d.onclick=()=>go(d.dataset.go));
+  C.dataset.r=1;
+};
+
+const go=(v,push=1)=>{
+  v=String(v||'').trim();
+  if(!v)return;
+  const t=tb();
+  M.classList.remove('on');
+  SW.classList.remove('on');
+  U.blur();
+
+  const parsed=normUrl(v);
+  if(!parsed)return;
+  t.blocked=false;
+
+  if(parsed.type==='gauth_external'){
+    t.type='gauth_external';
+    t.u=parsed.u;
+    t.t=parsed.t;
+    t.q='';
+    prog(1);
+  }else if(parsed.type==='builtin'){
+    t.type='builtin';
+    t.u=parsed.u;
+    t.t=parsed.t;
+    t.q='';
+    prog(1);
+  }else if(parsed.type==='url'){
+    t.type='frame';
+    t.u=parsed.u;
+    t.q='';
+    try{t.t=new URL(parsed.u).hostname.replace(/^www\./,'')}catch(e){t.t=parsed.u}
+    prog(0);
+    setTimeout(()=>prog(1),2200);
+  }else{
+    t.q=parsed.q;
+    t.t=parsed.q;
+    if(MODE==='wiki'){
+      t.type='wiki';
+      t.u='https://en.m.wikipedia.org/w/index.php?search='+encodeURIComponent(parsed.q);
+      prog(0);
+      fetchWiki(parsed.q,t).then(()=>prog(1));
+    }else{
+      t.type='frame';
+      t.u='https://www.google.com/search?q='+encodeURIComponent(parsed.q)+'&igu=1';
+      prog(0);
+      setTimeout(()=>prog(1),2200);
+    }
+  }
+
+  if(push){
+    t.H=t.H.slice(0,t.hi+1);
+    t.H.push({type:t.type,u:t.u,q:t.q,t:t.t,wikiData:t.wikiData});
+    t.hi=t.H.length-1;
+  }
+  if(t.u&&t.type!=='builtin'&&t.type!=='gauth_external'){
+    HL.push([t.t||t.u,t.u]);
+    HL=HL.slice(-60);
+    store('hl',HL);
+  }
+  view();
+};
+
+const back=()=>{
+  const t=tb();
+  if(t.hi>0){
+    Object.assign(t,t.H[--t.hi]);
+    t.blocked=false;
+    prog(1);
+    view();
+  }else if(t.type!=='home'){
+    t.hi=-1;
+    Object.assign(t,{type:'home',u:'',q:'',t:'New tab',blocked:false});
+    prog(1);
+    view();
+  }
+};
+
+const sw=()=>{
+  SW.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><span style="font-size:20px">${T.length} ${T.length===1?'tab':'tabs'}</span><div style="display:flex;gap:8px"><button class="btn" id="wca" style="background:var(--sf);color:var(--tx);padding:8px 14px">Close all</button><button class="btn" id="wnt" style="padding:8px 16px">New tab</button></div></div><div class="wtg">${T.map((t,i)=>`<div class="wt ${i===cu?'cu':''}" data-i="${i}" style="animation-delay:${i*40}ms"><div style="display:flex;justify-content:space-between;align-items:center"><span style="display:flex;gap:8px;align-items:center;min-width:0"><span class="ic" style="width:24px;height:24px;border-radius:50%;background:var(--ac);color:var(--on);font-size:12px;box-shadow:none;flex:none">${E((t.t||'N')[0].toUpperCase())}</span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;font-weight:500">${E(t.t)}</span></span><button class="rb2" data-x="${i}" style="width:28px;height:28px;background:none;flex:none">${svg('x',16)}</button></div><div style="font-size:11.5px;color:var(--tx2);word-break:break-all;line-height:1.35">${E(t.u||'Start page')}</div></div>`).join('')}</div>`;
+  SW.querySelectorAll('.wt').forEach(c=>c.onclick=e=>{
+    const x=e.target.closest('[data-x]');
+    if(x){
+      e.stopPropagation();
+      if(T[+x.dataset.x].c)T[+x.dataset.x].c.remove();
+      T.splice(+x.dataset.x,1);
+      if(!T.length)T.push(nt());
+      cu=Math.min(cu,T.length-1);
+      sw();
+      view(1);
+      return;
+    }
+    cu=+c.dataset.i;
+    SW.classList.remove('on');
+    view(1);
+  });
+  $('#wnt',SW).onclick=()=>{T.push(nt());cu=T.length-1;SW.classList.remove('on');view()};
+  $('#wca',SW).onclick=()=>{T.forEach(x=>x.c&&x.c.remove());T=[nt()];cu=0;SW.classList.remove('on');view()};
+};
+
+U.onkeydown=e=>{if(e.key==='Enter')go(U.value)};
+U.oninput=()=>{WGO.style.display=U.value.trim()?'grid':'none'};
+U.onfocus=()=>{U.select();if(U.value.trim())WGO.style.display='grid'};
+U.onblur=()=>{setTimeout(()=>{WGO.style.display='none'},150)};
+WGO.onclick=()=>go(U.value);
+WGA.onclick=()=>go('webos://google-signin');
+
+$('#wb',el).onclick=back;
+$('#wf',el).onclick=()=>{
+  const t=tb();
+  if(t.hi<t.H.length-1){
+    Object.assign(t,t.H[++t.hi]);
+    t.blocked=false;
+    prog(1);
+    view();
+  }
+};
+$('#whm',el).onclick=()=>{
+  const t=tb();
+  Object.assign(t,{type:'home',u:'',q:'',t:'New tab',blocked:false});
+  view();
+};
+$('#wrld',el).onclick=()=>{
+  const t=tb();
+  if(t.type==='frame'&&t.u)go(t.u,0);
+  else if(t.type==='wiki'&&t.q)go(t.q,0);
+  else view();
+};
+$('#wn',el).onclick=()=>{T.push(nt());cu=T.length-1;SW.classList.remove('on');view();U.focus()};
+$('#wtb',el).onclick=()=>{M.classList.remove('on');sw();SW.classList.toggle('on')};
+$('#wmn',el).onclick=()=>M.classList.toggle('on');
+$('#ws',el).onclick=()=>{
+  const t=tb();
+  if(!t.u)return toast('Open a page first to bookmark it');
+  const i=BM.findIndex(b=>b[1]===t.u);
+  if(i>=0){BM.splice(i,1);toast('Bookmark removed')}
+  else{BM.push([t.t||t.u,t.u]);toast('Bookmark added')}
+  store('bm',BM);
+  updateNavState();
+};
+
+M.querySelectorAll('[data-m]').forEach(d=>d.onclick=()=>{
+  const m=d.dataset.m,t=tb();
+  M.classList.remove('on');
+  if(m==='n'){T.push(nt());cu=T.length-1}
+  else if(m==='ga'){go('webos://google-signin');return}
+  else if(m==='b'){Object.assign(t,{type:'bm',u:'',t:'Bookmarks'})}
+  else if(m==='h'){Object.assign(t,{type:'hist',u:'',t:'History'})}
+  else if(m==='d'){DESK=!DESK;toast('Desktop site '+(DESK?'enabled':'disabled'))}
+  else if(m==='g'){go('webos://welcome');return}
+  else{HL=[];store('hl',HL);toast('History cleared');if(t.type==='hist')view();return}
+  view();
+});
+
+C.addEventListener('pointerdown',()=>M.classList.remove('on'));
+
+const mdu=()=>el.querySelectorAll('[data-md]').forEach(b=>{
+  const o=b.dataset.md===MODE;
+  b.style.background=o?'var(--ac)':'var(--sf)';
+  b.style.color=o?'var(--on)':'var(--tx)';
+});
+el.querySelectorAll('[data-md]').forEach(b=>b.onclick=()=>{
+  MODE=b.dataset.md;
+  U.placeholder=MODE==='wiki'?'Search Wikipedia & Instant Answers':'Search or enter URL (e.g. wikipedia.org)';
+  mdu();
+  const t=tb();
+  if(t.q)go(t.q,0);
+});
+mdu();
+
+inst.back=()=>{
+  if(SW.classList.contains('on')){SW.classList.remove('on');return 1}
+  if(M.classList.contains('on')){M.classList.remove('on');return 1}
+  const t=tb();
+  if(t.hi>=0||t.type!=='home'){back();return 1}
+};
+view();
+}}});
+let AC=null;const au=()=>{try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state=='suspended')AC.resume()}catch(e){}return AC};
+const tone=(f,t0,d,ty='sine',v=.12)=>{const a=au();if(!a)return;const o=a.createOscillator(),g=a.createGain(),V=v*(S.vol/100),n=a.currentTime+t0;o.type=ty;o.frequency.value=f;g.gain.setValueAtTime(0,n);g.gain.linearRampToValueAtTime(V,n+.01);g.gain.exponentialRampToValueAtTime(.0001,n+d);o.connect(g);g.connect(a.destination);o.start(n);o.stop(n+d+.05)};
+const snd=k=>{if(!S.vol)return;const m={tap:()=>tone(1400,0,.04,'square',.04),notif:()=>{tone(880,0,.25,'sine',.15);tone(1318,.12,.4,'sine',.13)},unlock:()=>{tone(660,0,.12);tone(990,.08,.18)},lock:()=>{tone(990,0,.1);tone(660,.07,.16)},done:()=>{tone(523,0,.15);tone(659,.1,.15);tone(784,.2,.3)}};if(m[k])m[k]()};
+let ML=null;const melody=on=>{clearInterval(ML);if(on){const n=[523,659,784,659,587,698,880,698];let i=0;ML=setInterval(()=>tone(n[i++%8],0,.35,'triangle',.1),420)}};
+document.addEventListener('pointerdown',e=>{au();if(e.target.closest('.it,.btn,.tile,.row,.gi,.rb2,.sw,.calc button,.pad button,#nav button,.card,.wt,.note,.nt'))snd('tap')});
+const IS='flex:1;min-width:0;height:44px;border-radius:22px;border:0;background:var(--sf);color:var(--tx);padding:0 16px;outline:none;font:inherit;user-select:text';
+const IMP={
+snap:el=>{const F=['','grayscale(1)','sepia(1)','hue-rotate(90deg)','invert(1)','saturate(2.5)','contrast(1.6)','blur(3px)'],N=['Original','Mono','Sepia','Hue','Invert','Vivid','Punch','Soft'];let f=0,br=100;
+el.innerHTML=hd('Snapline')+`<div class="body"><div id="ph" style="height:280px;border-radius:28px;background:linear-gradient(160deg,#ff9a9e,#fad0c4 40%,#a18cd1 70%,#4facfe);position:relative;overflow:hidden;transition:filter .35s"><div style="position:absolute;width:110px;height:110px;border-radius:50%;background:#ffe27a;top:36px;right:36px"></div><div style="position:absolute;bottom:0;left:0;right:0;height:120px;background:#2c3e50;clip-path:polygon(0 60%,25% 20%,50% 55%,75% 10%,100% 50%,100% 100%,0 100%)"></div></div><div style="display:flex;gap:8px;overflow:auto;margin:14px 0">${N.map((n,i)=>`<button class="btn" data-f="${i}" style="flex:none;padding:8px 16px">${n}</button>`).join('')}</div><div style="font-size:13px;color:var(--tx2)">Brightness</div><input type="range" min="50" max="150" value="100" id="br2"></div>`;
+const ap=()=>{$('#ph',el).style.filter=F[f]+' brightness('+br+'%)';el.querySelectorAll('[data-f]').forEach((b,i)=>{b.style.background=i==f?'var(--ac)':'var(--sf)';b.style.color=i==f?'var(--on)':'var(--tx)'})};el.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{f=+b.dataset.f;ap()});$('#br2',el).oninput=e=>{br=+e.target.value;ap()};ap()},
+orb:el=>{const P={Home:[50,55],Cafe:[25,30],Park:[75,25],Station:[70,75],Library:[30,78]};let z=1,pin='Home';
+const d=()=>{el.innerHTML=hd('Orbit Maps')+`<div style="padding:0 16px"><div class="sq" style="margin:0 0 10px;height:48px">${svg('search',20)}<input id="oq" placeholder="Search: Cafe, Park, Station…"></div></div><div style="flex:1;margin:0 16px 16px;border-radius:28px;overflow:hidden;position:relative;background:#e8eaed"><svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;transition:transform .45s cubic-bezier(.2,.8,.2,1);transform:scale(${z});transform-origin:${P[pin][0]}% ${P[pin][1]}%"><rect width="100" height="100" fill="#e8eaed"/><rect x="60" y="8" width="32" height="28" rx="4" fill="#b7e1a1"/><path d="M0 66 Q40 52 100 68 V80 Q40 66 0 80z" fill="#9ecbff"/>${[20,45,70].map(x=>`<rect x="${x}" width="4" height="100" fill="#fff"/>`).join('')}${[25,55].map(y=>`<rect y="${y}" width="100" height="3" fill="#fff"/>`).join('')}${Object.entries(P).map(([n,[x,y]])=>`<g data-p="${n}" style="cursor:pointer"><circle cx="${x}" cy="${y}" r="${n==pin?3:2}" fill="${n==pin?'#d93025':'#5f6368'}"/><text x="${x+3.5}" y="${y+1}" font-size="3" fill="#202124">${n}</text></g>`).join('')}</svg><div style="position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;gap:8px"><button class="rb2" id="zi" style="background:var(--bg)">${svg('add',22)}</button><button class="rb2" id="zo" style="background:var(--bg);font-size:22px">−</button></div><div style="position:absolute;left:12px;bottom:12px;right:70px;background:var(--bg);color:var(--tx);border-radius:20px;padding:12px 16px">${pin}<div style="font-size:12px;color:var(--tx2)">${pin=='Home'?'Your location':(Math.abs(P[pin][0]-50)+Math.abs(P[pin][1]-55))*40+' m away'}</div></div></div>`;
+el.querySelectorAll('[data-p]').forEach(g=>g.onclick=()=>{pin=g.dataset.p;d()});$('#zi',el).onclick=()=>{z=Math.min(3,z+.5);d()};$('#zo',el).onclick=()=>{z=Math.max(1,z-.5);d()};$('#oq',el).onkeydown=e=>{if(e.key==='Enter'){const k=Object.keys(P).find(n=>n.toLowerCase().includes(e.target.value.toLowerCase()));if(k){pin=k;d()}else toast('No results')}}};d()},
+tem:el=>{let st=store('steps')||3200,run=0,s=0;const d=()=>{const pc=Math.min(1,st/10000);el.innerHTML=hd('Tempo Fit')+`<div class="body" style="text-align:center"><svg viewBox="0 0 120 120" width="200"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--sf)" stroke-width="12"/><circle cx="60" cy="60" r="52" fill="none" stroke="#34a853" stroke-width="12" stroke-linecap="round" stroke-dasharray="${pc*326.7} 400" transform="rotate(-90 60 60)"/><text x="60" y="66" text-anchor="middle" font-size="22" fill="var(--tx)">${st}</text></svg><div style="color:var(--tx2)">steps of 10,000</div><div style="display:flex;gap:8px;justify-content:center;margin:16px 0"><button class="btn" id="a1">+100 steps</button><button class="btn" id="a2" style="background:var(--sf);color:var(--tx)">Reset</button></div><div class="row" style="justify-content:center;font-size:34px" id="tm">${fmtT(s)}</div><button class="btn" id="a3" style="margin-top:8px">${run?'Stop workout':'Start workout'}</button></div>`;
+$('#a1',el).onclick=()=>{st+=100;store('steps',st);if(st==10000)snd('done');d()};$('#a2',el).onclick=()=>{st=0;store('steps',0);d()};$('#a3',el).onclick=()=>{run=!run;if(!run)s=0;d()}};d();const t=setInterval(()=>{if(!el.isConnected)return clearInterval(t);if(run){s++;const x=$('#tm',el);if(x)x.textContent=fmtT(s)}},1000)},
+bud:el=>{let L=store('exp')||[['Groceries',42.5],['Transport',12]];const d=()=>{const tot=L.reduce((a,b)=>a+b[1],0);el.innerHTML=hd('Budgetly')+`<div class="body"><div style="text-align:center;padding:10px"><div style="color:var(--tx2)">Spent this month</div><div style="font-size:44px;font-weight:300">$${tot.toFixed(2)}</div></div><div style="display:flex;gap:8px;margin-bottom:12px"><input id="bl" placeholder="What for?" style="${IS}"><input id="ba" type="number" placeholder="$" style="${IS};flex:none;width:84px"><button class="btn" id="bg">Add</button></div>${L.map((x,i)=>`<div class="row"><span>${E(x[0])}</span><span>$${x[1].toFixed(2)} <b data-d="${i}" style="cursor:pointer;margin-left:10px">×</b></span></div>`).join('')}</div>`;
+$('#bg',el).onclick=()=>{const a=parseFloat($('#ba',el).value),l=$('#bl',el).value.trim();if(a>0&&l){L.push([l,a]);store('exp',L);d()}};el.querySelectorAll('[data-d]').forEach(b=>b.onclick=e=>{e.stopPropagation();L.splice(+b.dataset.d,1);store('exp',L);d()})};d()},
+pod:el=>{const L=[['The Quiet Machine','42 min'],['Maps Without Borders','31 min'],['Slow Mornings','27 min'],['Signal & Noise','55 min']];let cu=-1,pr=0;const d=()=>{el.innerHTML=hd('Podstream')+`<div class="body">${L.map((e,i)=>`<div class="row" data-e="${i}" style="cursor:pointer;gap:14px"><span class="ic" style="width:44px;height:44px;border-radius:14px;background:#8e24aa;flex:none">${svg(cu==i?'pause':'play',24)}</span><span style="flex:1"><div>${e[0]}</div><small style="color:var(--tx2)">${e[1]}</small>${cu==i?`<div style="height:4px;border-radius:2px;background:var(--bg);margin-top:8px"><div style="width:${pr}%;height:100%;background:var(--ac);border-radius:2px"></div></div>`:''}</span></div>`).join('')}</div>`;el.querySelectorAll('[data-e]').forEach(r=>r.onclick=()=>{const i=+r.dataset.e;cu=cu==i?-1:i;pr=0;melody(cu>=0);d()})};d();const t=setInterval(()=>{if(!el.isConnected){clearInterval(t);melody(0);return}if(cu>=0){pr=Math.min(100,pr+1.5);d()}},600)},
+chs:el=>{let B=Array(9).fill(''),w='',sc=store('ttt')||[0,0];const L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];const win=b=>{for(const [a,c,e] of L)if(b[a]&&b[a]==b[c]&&b[a]==b[e])return b[a];return b.includes('')?'':'T'};
+const mm=(b,p)=>{const r=win(b);if(r)return r=='O'?1:r=='X'?-1:0;let best=p=='O'?-2:2;b.forEach((v,i)=>{if(!v){b[i]=p;const s=mm(b,p=='O'?'X':'O');b[i]='';best=p=='O'?Math.max(best,s):Math.min(best,s)}});return best};
+const ai=()=>{let bi=-1,bs=-2;B.forEach((v,i)=>{if(!v){B[i]='O';const s=mm(B,'X');B[i]='';if(s>bs){bs=s;bi=i}}});if(bi>=0)B[bi]='O'};
+const d=()=>{el.innerHTML=hd('Tic Tac Pro')+`<div class="body" style="text-align:center"><div style="color:var(--tx2);margin-bottom:10px">You ${sc[0]} · Computer ${sc[1]}</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:300px;margin:0 auto">${B.map((v,i)=>`<button data-c="${i}" class="btn" style="height:90px;font-size:44px;background:var(--sf);color:${v=='X'?'var(--ac)':'var(--tx)'}">${v}</button>`).join('')}</div><div style="margin:16px;font-size:18px">${w=='T'?'Draw':w=='X'?'You win!':w=='O'?'Computer wins':'Your move'}</div><button class="btn" id="ng">New game</button></div>`;
+el.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{const i=+b.dataset.c;if(B[i]||w)return;B[i]='X';w=win(B);if(!w){ai();w=win(B)}if(w=='X')sc[0]++;if(w=='O')sc[1]++;if(w)store('ttt',sc);d()});$('#ng',el).onclick=()=>{B=Array(9).fill('');w='';d()}};d()},
+blk:el=>{const C=['#ea4335','#4285f4','#fbbc04','#34a853'];let G,sc=0;const nw=()=>{G=[...Array(8)].map(()=>[...Array(8)].map(()=>Math.random()*4|0));sc=0};nw();
+const d=()=>{el.innerHTML=hd('BlockPop')+`<div class="body" style="text-align:center"><div style="font-size:22px;margin-bottom:10px">Score ${sc}</div><div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px">${G.map((r,y)=>r.map((c,x)=>`<div data-x="${x}" data-y="${y}" style="aspect-ratio:1;border-radius:10px;background:${c<0?'transparent':C[c]};cursor:pointer"></div>`).join('')).join('')}</div><button class="btn" id="bn" style="margin-top:16px">New game</button></div>`;
+el.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{const x=+b.dataset.x,y=+b.dataset.y,c=G[y][x];if(c<0)return;const S2=[],q=[[x,y]],seen={};while(q.length){const [a,k2]=q.pop(),k=a+','+k2;if(seen[k]||a<0||k2<0||a>7||k2>7||G[k2][a]!=c)continue;seen[k]=1;S2.push([a,k2]);q.push([a+1,k2],[a-1,k2],[a,k2+1],[a,k2-1])}
+if(S2.length<2)return;S2.forEach(([a,k2])=>G[k2][a]=-1);sc+=S2.length*S2.length;for(let a=0;a<8;a++){const col=G.map(r=>r[a]).filter(v=>v>=0);while(col.length<8)col.unshift(-1);col.forEach((v,r)=>G[r][a]=v)}d()});$('#bn',el).onclick=()=>{nw();d()}};d()},
+run:el=>{el.innerHTML=hd('Skyrunner')+`<div class="body" style="padding:0 16px"><canvas id="cv" width="340" height="360" style="width:100%;border-radius:24px;background:linear-gradient(#89cff0,#e0f7ff)"></canvas><p style="text-align:center;color:var(--tx2)">Tap the screen to jump</p></div>`;const cv=$('#cv',el),x=cv.getContext('2d');let y=0,v=0,ob=[],sc=0,t=0,over=0,hs=store('hs')||0;
+cv.onpointerdown=()=>{if(over){y=0;v=0;ob=[];sc=0;over=0;return}if(y==0){v=13;snd('tap')}};
+const tk=setInterval(()=>{if(!el.isConnected)return clearInterval(tk);if(!over){t++;if(t%70==0)ob.push({x:340,w:24+Math.random()*16,h:30+Math.random()*30});v-=.7;y=Math.max(0,y+v);if(y==0)v=0;ob.forEach(o=>o.x-=4+sc/400);ob=ob.filter(o=>o.x>-50);sc++;for(const o of ob)if(o.x<80&&o.x+o.w>50&&y<o.h){over=1;hs=Math.max(hs,sc);store('hs',hs);snd('lock')}}
+x.clearRect(0,0,340,360);x.fillStyle='#4caf50';x.fillRect(0,300,340,60);x.fillStyle='#d84315';x.fillRect(50,264-y,30,36);x.fillStyle='#3e2723';ob.forEach(o=>x.fillRect(o.x,300-o.h,o.w,o.h));x.fillStyle='#202124';x.font='18px sans-serif';x.fillText('Score '+Math.floor(sc/10)+'  Best '+Math.floor(hs/10),12,28);if(over){x.font='22px sans-serif';x.fillText('Game over – tap to retry',50,150)}},25)},
+lng:el=>{const W=[['hello','hola'],['thank you','gracias'],['water','agua'],['friend','amigo'],['house','casa'],['book','libro'],['cat','gato'],['good night','buenas noches']];let i=0,sc=0,done=0;
+const d=()=>{if(done){el.innerHTML=hd('Lingo Learn')+`<div class="body" style="text-align:center;padding-top:60px"><div style="font-size:44px">${sc}/${W.length}</div><p style="color:var(--tx2)">Lesson complete</p><button class="btn" id="lr">Try again</button></div>`;$('#lr',el).onclick=()=>{i=sc=done=0;d()};return}
+const o=[W[i][1],...W.filter((_,j)=>j!=i).sort(()=>Math.random()-.5).slice(0,3).map(w=>w[1])].sort(()=>Math.random()-.5);
+el.innerHTML=hd('Lingo Learn')+`<div class="body"><div style="height:8px;border-radius:4px;background:var(--sf);margin-bottom:24px"><div style="width:${i/W.length*100}%;height:100%;border-radius:4px;background:var(--ac);transition:width .4s"></div></div><div style="color:var(--tx2)">Translate to Spanish</div><div style="font-size:34px;margin:10px 0 24px">${W[i][0]}</div>${o.map(w=>`<div class="row" data-w="${w}" style="cursor:pointer;justify-content:center;font-size:18px">${w}</div>`).join('')}</div>`;
+el.querySelectorAll('[data-w]').forEach(r=>r.onclick=()=>{const ok=r.dataset.w==W[i][1];if(ok)sc++;r.style.background=ok?'#34a853':'#d93025';r.style.color='#fff';snd(ok?'done':'lock');setTimeout(()=>{i++;if(i>=W.length)done=1;d()},600)})};d()},
+day:(el,inst)=>{let L=store('day')||[],ed=-1;const d=()=>{if(ed<0){el.innerHTML=hd('Daybook')+`<div class="body">${L.map((e,i)=>`<div class="note" data-j="${i}"><b>${E(e.d)}</b><span>${E(e.t.slice(0,70))}</span></div>`).join('')||'<p style="text-align:center;color:var(--tx2);margin-top:60px">Write your first entry</p>'}</div><button class="fab">+</button>`;el.querySelectorAll('[data-j]').forEach(n=>n.onclick=()=>{ed=+n.dataset.j;d()});$('.fab',el).onclick=()=>{L.unshift({d:new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'}),t:''});ed=0;d()}}
+else{el.innerHTML=hd(E(L[ed].d))+`<div class="body" style="display:flex;flex-direction:column"><textarea placeholder="How was your day?"></textarea></div>`;const t=$('textarea',el);t.value=L[ed].t;t.oninput=()=>{L[ed].t=t.value;store('day',L)}}};inst.back=()=>{if(ed>=0){if(!L[ed].t)L.splice(ed,1);store('day',L);ed=-1;d();return 1}};d()}
+};
+const ext=u=>{const a=document.createElement('a');a.href=u;a.target='_blank';a.rel='noopener';document.body.append(a);a.click();a.remove()};
+const PM={x_orb:['Location','this device’s location'],x_tem:['Physical activity','your physical activity'],x_snap:['Photos and media','photos and media on your device']};let PG=store('perm')||{};const OK={};
+const uninstall=k=>{const s=stack.find(x=>x.id==k);if(s)kill(s);INS=INS.filter(x=>x!=k.slice(2));store('ins',INS);delete APPS[k];const j=ORDER.indexOf(k);if(j>=0)ORDER.splice(j,1);fillDrawer('');hg2fill();toast('App uninstalled')};
+const pd=document.createElement('div');pd.className='abs';pd.style.cssText='z-index:96;background:#0008;display:none;place-items:center;padding:24px';ph.append(pd);
+const _o=open;open=function(id){const p=PM[id];if(!p||PG[id]||OK[id])return _o(id);pd.innerHTML=`<div style="background:var(--sf);color:var(--tx);border-radius:32px;padding:26px 22px;width:100%;text-align:center;animation:tl .35s cubic-bezier(.2,.8,.2,1)"><div style="display:flex;justify-content:center;color:var(--ac);margin-bottom:10px">${svg('pin',30)}</div><div style="font-size:18px;margin-bottom:18px">Allow <b>${E(APPS[id].n)}</b> to access ${p[1]}?</div>${['While using the app','Only this time','Don’t allow'].map((t,i)=>`<button class="btn" data-pd="${i}" style="display:block;width:100%;margin-top:8px;background:var(--tx);color:var(--bg);padding:14px">${t}</button>`).join('')}</div>`;pd.style.display='grid';pd.querySelectorAll('[data-pd]').forEach(b=>b.onclick=()=>{pd.style.display='none';const i=+b.dataset.pd;if(i==0){PG[id]=1;store('perm',PG)}if(i==1)OK[id]=1;if(i==2){toast('Permission denied');return}_o(id)})};
+const rg=t=>t.style.setProperty('--p',((t.value-(t.min||0))/((t.max||100)-(t.min||0))*100)+'%');
+document.addEventListener('input',e=>{if(e.target.type=='range')rg(e.target)});setInterval(()=>document.querySelectorAll('input[type=range]').forEach(rg),300);
+const tabInd=t=>{const on=t.querySelector('button.on');if(!on)return;let i=t.querySelector('.ind');if(!i){i=document.createElement('span');i.className='ind';i.style.transition='none';t.prepend(i)}const l=on.offsetLeft+'px',w=on.offsetWidth+'px';if(i.style.left!=l||i.style.width!=w){i.style.left=l;i.style.width=w}if(i.style.transition=='none')requestAnimationFrame(()=>requestAnimationFrame(()=>i.style.transition=''))};
+setInterval(()=>document.querySelectorAll('.tabs').forEach(tabInd),150);
+document.addEventListener('click',e=>{const b=e.target.closest('.tabs button');if(!b)return;const t=b.parentElement;t.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x==b));tabInd(t)},true);
+function hg2fill(){const h=$('#hg2');h.innerHTML='';ORDER.filter(k=>k.startsWith('x_')).forEach(k=>h.append(mk(k)));if(!h.children.length)h.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px 16px;font-size:14px;text-shadow:0 1px 3px #0006">Apps you install from the Play Store appear here</div>'}
+const pgr=$('#pg'),dts=[...document.querySelectorAll('#dots i')];pgr.onscroll=()=>{const n=Math.round(pgr.scrollLeft/pgr.clientWidth);dts.forEach((d,j)=>d.classList.toggle('on',j==n))};dts.forEach((d,j)=>d.onclick=()=>pgr.scrollTo({left:j*pgr.clientWidth}));hg2fill();
+Object.assign(IC,{weather:'<path d="M8 4.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zM7.2 1h1.6v2.2H7.2zM1 7.2h2.2v1.6H1zM2.6 2.6l1.1-1.1 1.5 1.5-1.1 1.1zM12.4 1.5l1.1 1.1-1.5 1.5-1.1-1.1zM17.5 20H11a4 4 0 0 1-.6-7.96A5 5 0 0 1 20 13.5 3.3 3.3 0 0 1 17.5 20z"/>'});
+hg.innerHTML='';dock.innerHTML='';['calc','clock','notes','cal','weather','music','gal','play'].forEach(i=>hg.append(mk(i)));DOCK.forEach(i=>dock.append(mk(i)));fillDrawer('');
+document.addEventListener('keydown',e=>{if(e.key==='Escape')back()});
+</script>
+</body></html>
