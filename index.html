@@ -532,22 +532,39 @@ const gSignIn=()=>{
   }
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
   gLoadOn('Opening Google sign-in…');
-  const tc=google.accounts.oauth2.initTokenClient({client_id:cid,scope:'openid email profile',prompt:'select_account',
-    callback:async r=>{
-      if(r.error){gLoadOff();return toast('Sign-in cancelled')}
-      gLoadOn('Signing you in…');
-      try{
-        const u=await(await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+r.access_token}})).json();
-        if(!u.email)throw 0;
-        const g=GA(),acc={sub:u.sub,name:u.name||u.email,email:u.email,picture:u.picture||'',verified:1,at:Date.now()};
-        const i=g.list.findIndex(x=>x.sub===u.sub);if(i>=0)g.list[i]=acc;else g.list.push(acc);
-        g.cur=i>=0?i:g.list.length-1;GSET(g);gLoadOff();toast('Signed in as '+acc.email);refreshG();
-      }catch(e){gLoadOff();toast('Could not read account info')}
-    },
-    error_callback:()=>{gLoadOff();toast('Sign-in window closed')}});
-  // Browsers only allow the Google popup to open directly from the click, so it
-  // opens right away; the branded overlay above is what's visible meanwhile.
-  tc.requestAccessToken();
+  let settled=false;
+  const stuckTimer=setTimeout(()=>{
+    if(settled)return;
+    settled=true;
+    gLoadOff();
+    const c=tb().c,q=c&&c.querySelector('#gsignfallback');
+    toast('Popup likely blocked — use the link below');
+    if(q)q.style.display='block';
+  },4500);
+  try{
+    const tc=google.accounts.oauth2.initTokenClient({client_id:cid,scope:'openid email profile',prompt:'select_account',
+      callback:async r=>{
+        if(settled)return; settled=true; clearTimeout(stuckTimer);
+        if(r.error){gLoadOff();return toast('Sign-in cancelled')}
+        gLoadOn('Signing you in…');
+        try{
+          const u=await(await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+r.access_token}})).json();
+          if(!u.email)throw 0;
+          const g=GA(),acc={sub:u.sub,name:u.name||u.email,email:u.email,picture:u.picture||'',verified:1,at:Date.now()};
+          const i=g.list.findIndex(x=>x.sub===u.sub);if(i>=0)g.list[i]=acc;else g.list.push(acc);
+          g.cur=i>=0?i:g.list.length-1;GSET(g);gLoadOff();toast('Signed in as '+acc.email);refreshG();
+        }catch(e){gLoadOff();toast('Could not read account info')}
+      },
+      error_callback:e=>{
+        if(settled)return; settled=true; clearTimeout(stuckTimer);
+        gLoadOff();
+        toast(e&&e.type==='popup_failed_to_open'?'Google popup was blocked by the browser':'Sign-in window closed');
+      }});
+    tc.requestAccessToken();
+  }catch(e){
+    settled=true;clearTimeout(stuckTimer);gLoadOff();
+    toast('Google sign-in error: '+(e&&e.message?e.message:'could not start'));
+  }
 };
 const renderRealGoogleLoginPage=()=>{
   const g=GA(),cid=store('gcid')||'';
