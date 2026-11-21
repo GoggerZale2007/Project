@@ -388,7 +388,7 @@ const BUILTIN={
       <ul style="margin:6px 0 0 18px;padding:0">
         <li><b>Google Account:</b> Tap the profile avatar in the top bar or visit <code>webos://google-signin</code> to open official Google sign-in (<code>accounts.google.com</code>) directly in a real browser tab.</li>
         <li><b>Web Mode:</b> Searches via Google (<code>?igu=1</code>) & loads websites directly in-app.</li>
-        <li><b>Instant Wiki Mode:</b> Fetches live Wikipedia articles & instant answers natively with zero iframe blocks!</li>
+        <li><b>Wikipedia & Wiktionary Modes:</b> Fetches live Wikipedia articles or Wiktionary definitions natively with zero iframe blocks!</li>
         <li><b>Blocked Sites:</b> Real <code>accounts.google.com</code> login pages send <code>X-Frame-Options: DENY</code>; WebOS opens real Google login externally rather than using fake or simulated accounts.</li>
       </ul>
     </div>
@@ -409,7 +409,8 @@ el.innerHTML=`
 </div>
 <div style="display:flex;gap:6px;padding:4px 12px 6px;align-items:center">
   <button class="btn" data-md="web" style="padding:6px 14px;font-size:12.5px">Web</button>
-  <button class="btn" data-md="wiki" style="padding:6px 14px;font-size:12.5px">Instant Wiki</button>
+  <button class="btn" data-md="wiki" style="padding:6px 14px;font-size:12.5px">Wikipedia</button>
+  <button class="btn" data-md="wikt" style="padding:6px 14px;font-size:12.5px">Wiktionary</button>
   <span style="flex:1"></span>
   <button class="rb2" id="wrld" title="Reload" style="width:32px;height:32px;background:var(--sf)">${svg('rld',16)}</button>
 </div>
@@ -483,24 +484,74 @@ const normUrl=v=>{
   return {type:'query',q:v};
 };
 
-async function fetchWiki(q,t){
+async function fetchWiki(q,t,src='wiki'){
+  const isWikt=src==='wikt';
+  const dom=isWikt?'en.wiktionary.org':'en.wikipedia.org';
+  const label=isWikt?'Wiktionary':'Wikipedia';
   t.loading=true;
   t.wikiData=null;
   view();
   try{
-    const sr=await fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch='+encodeURIComponent(q)+'&format=json&origin=*&srlimit=6');
+    const sr=await fetch(`https://${dom}/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&format=json&origin=*&srlimit=6`);
     const sd=await sr.json();
     const hits=(sd.query&&sd.query.search)||[];
     let topSummary=null;
     if(hits.length){
-      try{
-        const sumRes=await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(hits[0].title.replace(/ /g,'_')));
-        if(sumRes.ok)topSummary=await sumRes.json();
-      }catch(e){}
+      const exact=hits.find(h=>h.title.toLowerCase()===q.trim().toLowerCase())||hits[0];
+      if(isWikt){
+        try{
+          const defRes=await fetch(`https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(exact.title.replace(/ /g,'_'))}`);
+          if(defRes.ok){
+            const defData=await defRes.json();
+            const langs=Object.keys(defData);
+            const pickLang=defData.en?'en':langs[0];
+            if(pickLang&&Array.isArray(defData[pickLang])){
+              const lines=[];
+              defData[pickLang].forEach(entry=>{
+                const pos=entry.partOfSpeech||'Term';
+                (entry.definitions||[]).slice(0,3).forEach(df=>{
+                  const cleanDef=String(df.definition||'').replace(/<[^>]+>/g,'').trim();
+                  if(cleanDef)lines.push(`(${pos}) ${cleanDef}`);
+                });
+              });
+              if(lines.length){
+                topSummary={
+                  title:exact.title,
+                  description:pickLang==='en'?'English':pickLang.toUpperCase(),
+                  extract:lines.slice(0,5).join('\n• '),
+                  content_urls:{mobile:{page:`https://en.m.wiktionary.org/wiki/${encodeURIComponent(exact.title.replace(/ /g,'_'))}`}}
+                };
+              }
+            }
+          }
+        }catch(e){}
+      }
+      if(!topSummary){
+        try{
+          const sumRes=await fetch(`https://${dom}/api/rest_v1/page/summary/${encodeURIComponent(exact.title.replace(/ /g,'_'))}`);
+          if(sumRes.ok)topSummary=await sumRes.json();
+        }catch(e){}
+      }
+      if(!topSummary&&isWikt){
+        try{
+          const extRes=await fetch(`https://en.wiktionary.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&titles=${encodeURIComponent(exact.title)}&format=json&origin=*`);
+          const extData=await extRes.json();
+          const pages=extData.query&&extData.query.pages;
+          const pg=pages&&Object.values(pages)[0];
+          if(pg&&pg.extract){
+            topSummary={
+              title:pg.title,
+              description:'Wiktionary entry',
+              extract:pg.extract.slice(0,500),
+              content_urls:{mobile:{page:`https://en.m.wiktionary.org/wiki/${encodeURIComponent(pg.title.replace(/ /g,'_'))}`}}
+            };
+          }
+        }catch(e){}
+      }
     }
-    t.wikiData={q,hits,topSummary};
+    t.wikiData={q,hits,topSummary,src,dom,label};
   }catch(e){
-    t.wikiData={q,error:true,hits:[]};
+    t.wikiData={q,error:true,hits:[],src,dom,label};
   }
   t.loading=false;
   if(t.c)delete t.c.dataset.r;
@@ -615,7 +666,7 @@ const tabEl=t=>{if(!t.c){t.c=document.createElement('div');t.c.style.cssText='po
 const view=(keep)=>{
   const t=tb();
   if(document.activeElement!==U){
-    U.value=(t.type==='frame'||t.type==='builtin'||t.type==='gauth_external')?t.u:t.type==='wiki'?t.q:'';
+    U.value=(t.type==='frame'||t.type==='builtin'||t.type==='gauth_external')?t.u:(t.type==='wiki'||t.type==='wikt')?t.q:'';
     WGO.style.display='none';
   }
   updateNavState();
@@ -636,7 +687,7 @@ const view=(keep)=>{
     <div style="padding:0 14px 16px">
       <div class="row" data-go="webos://welcome" style="cursor:pointer;gap:12px;padding:12px 14px">
         <span class="ic" style="width:36px;height:36px;border-radius:12px;background:var(--ac);color:var(--on);box-shadow:none;flex:none">${svg('info',18)}</span>
-        <span style="flex:1;min-width:0"><div style="font-size:14px">Browser Guide & Tips</div><small style="color:var(--tx2)">Google Sign-In, ?igu=1 search & Instant Wiki</small></span>
+        <span style="flex:1;min-width:0"><div style="font-size:14px">Browser Guide & Tips</div><small style="color:var(--tx2)">Google Sign-In, ?igu=1 search, Wikipedia & Wiktionary</small></span>
       </div>
     </div>`+(BM.length?`<div class="sec" style="margin-left:18px">Bookmarks</div><div style="padding:0 14px 16px">${BM.slice(-6).reverse().map(b=>rowS(b[0],b[1],b[1])).join('')}</div>`:'');
   }
@@ -679,16 +730,19 @@ const view=(keep)=>{
       </div>
     </div>`;
   }
-  else if(t.type==='wiki'){
+  else if(t.type==='wiki'||t.type==='wikt'){
+    const isWikt=t.type==='wikt';
+    const label=isWikt?'Wiktionary':'Wikipedia';
+    const mobileDom=isWikt?'en.m.wiktionary.org':'en.m.wikipedia.org';
     if(t.loading){
-      h=`<div style="padding:48px 20px;text-align:center;color:var(--tx2)"><div style="font-size:16px;margin-bottom:6px">Searching Wikipedia…</div><small>Fetching live results for “${E(t.q)}”</small></div>`;
+      h=`<div style="padding:48px 20px;text-align:center;color:var(--tx2)"><div style="font-size:16px;margin-bottom:6px">Searching ${label}…</div><small>Fetching live results for “${E(t.q)}”</small></div>`;
     }else if(t.wikiData&&t.wikiData.error){
-      h=`<div style="padding:36px 20px;text-align:center"><div style="font-size:17px;margin-bottom:8px">Offline or network blocked</div><p style="color:var(--tx2);font-size:13.5px;margin-bottom:18px">Could not reach Wikipedia API from this environment.</p><a class="btn" href="https://www.google.com/search?q=${encodeURIComponent(t.q)}" target="_blank" rel="noopener" style="text-decoration:none">Search on Google ↗</a></div>`;
+      h=`<div style="padding:36px 20px;text-align:center"><div style="font-size:17px;margin-bottom:8px">Offline or network blocked</div><p style="color:var(--tx2);font-size:13.5px;margin-bottom:18px">Could not reach ${label} API from this environment.</p><a class="btn" href="https://www.google.com/search?q=${encodeURIComponent(t.q)}" target="_blank" rel="noopener" style="text-decoration:none">Search on Google ↗</a></div>`;
     }else if(t.wikiData){
       const {topSummary,hits}=t.wikiData;
       h=`<div style="padding:14px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span style="font-size:12.5px;color:var(--tx2)">Instant Results for “${E(t.q)}”</span>
+          <span style="font-size:12.5px;color:var(--tx2)">${label} Results for “${E(t.q)}”</span>
           <a href="https://www.google.com/search?q=${encodeURIComponent(t.q)}" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--ac);text-decoration:none">Google ↗</a>
         </div>
         ${topSummary&&topSummary.extract?`<div class="row" style="display:block;padding:16px;margin-bottom:12px">
@@ -699,18 +753,18 @@ const view=(keep)=>{
             </div>
             ${topSummary.thumbnail?`<img src="${E(topSummary.thumbnail.source)}" style="width:56px;height:56px;border-radius:12px;object-fit:cover;flex:none">`:''}
           </div>
-          <div style="font-size:14px;line-height:1.55;color:var(--tx)">${E(topSummary.extract)}</div>
+          <div style="font-size:14px;line-height:1.55;color:var(--tx);white-space:pre-line">${E(topSummary.extract)}</div>
           ${topSummary.content_urls&&topSummary.content_urls.mobile?`<div style="margin-top:12px;display:flex;gap:8px"><button class="btn" data-go="${E(topSummary.content_urls.mobile.page)}" style="padding:7px 14px;font-size:12.5px">Open Full Page</button><a class="btn" href="${E(topSummary.content_urls.mobile.page)}" target="_blank" rel="noopener" style="background:var(--bg);color:var(--tx);text-decoration:none;padding:7px 14px;font-size:12.5px">External ↗</a></div>`:''}
         </div>`:''}
-        <div class="sec" style="margin-top:6px">Related Articles</div>
+        <div class="sec" style="margin-top:6px">${isWikt?'Related Entries':'Related Articles'}</div>
         ${hits.length?hits.map(hit=>{
           const clean=hit.snippet.replace(/<[^>]+>/g,'');
-          const pageUrl='https://en.m.wikipedia.org/wiki/'+encodeURIComponent(hit.title.replace(/ /g,'_'));
+          const pageUrl=`https://${mobileDom}/wiki/`+encodeURIComponent(hit.title.replace(/ /g,'_'));
           return `<div class="row" data-go="${E(pageUrl)}" style="display:block;cursor:pointer;padding:13px 15px">
             <div style="font-size:15px;font-weight:500;color:var(--ac)">${E(hit.title)}</div>
             <div style="font-size:13px;color:var(--tx2);margin-top:4px;line-height:1.4">${E(clean)}…</div>
           </div>`;
-        }).join(''):'<p style="text-align:center;color:var(--tx2);margin-top:24px">No Wikipedia articles matched that query.</p>'}
+        }).join(''):`<p style="text-align:center;color:var(--tx2);margin-top:24px">No ${label} ${isWikt?'entries':'articles'} matched that query.</p>`}
       </div>`;
     }
   }
@@ -783,11 +837,12 @@ const go=(v,push=1)=>{
   }else{
     t.q=parsed.q;
     t.t=parsed.q;
-    if(MODE==='wiki'){
-      t.type='wiki';
-      t.u='https://en.m.wikipedia.org/w/index.php?search='+encodeURIComponent(parsed.q);
+    if(MODE==='wiki'||MODE==='wikt'){
+      t.type=MODE;
+      const dom=MODE==='wikt'?'en.m.wiktionary.org':'en.m.wikipedia.org';
+      t.u=`https://${dom}/w/index.php?search=`+encodeURIComponent(parsed.q);
       prog(0);
-      fetchWiki(parsed.q,t).then(()=>prog(1));
+      fetchWiki(parsed.q,t,MODE).then(()=>prog(1));
     }else{
       t.type='frame';
       t.u='https://www.google.com/search?q='+encodeURIComponent(parsed.q)+'&igu=1';
@@ -871,7 +926,7 @@ $('#whm',el).onclick=()=>{
 $('#wrld',el).onclick=()=>{
   const t=tb();
   if(t.type==='frame'&&t.u)go(t.u,0);
-  else if(t.type==='wiki'&&t.q)go(t.q,0);
+  else if((t.type==='wiki'||t.type==='wikt')&&t.q)go(t.q,0);
   else view();
 };
 $('#wn',el).onclick=()=>{T.push(nt());cu=T.length-1;SW.classList.remove('on');view();U.focus()};
@@ -909,7 +964,7 @@ const mdu=()=>el.querySelectorAll('[data-md]').forEach(b=>{
 });
 el.querySelectorAll('[data-md]').forEach(b=>b.onclick=()=>{
   MODE=b.dataset.md;
-  U.placeholder=MODE==='wiki'?'Search Wikipedia & Instant Answers':'Search or enter URL (e.g. wikipedia.org)';
+  U.placeholder=MODE==='wiki'?'Search Wikipedia & Instant Answers':MODE==='wikt'?'Search Wiktionary definitions':'Search or enter URL (e.g. wikipedia.org)';
   mdu();
   const t=tb();
   if(t.q)go(t.q,0);
